@@ -1,0 +1,1 @@
+java -classpath "libs/*" org.antlr.v4.gui.TestRig %*
