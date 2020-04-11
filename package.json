@@ -1,7 +1,7 @@
 {
-  "name": "modeldba_antlr4",
+  "name": "SQLSurveyor",
   "version": "1.0.0",
-  "description": "MySQL Grammar: https://github.com/mysql/mysql-workbench/tree/8.0/library/parsers/grammars\r TSQL and PlSQL: https://github.com/antlr/grammars-v4/tree/master/sql",
+  "description": "High-level SQL parser",
   "main": "parse.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,5 +10,9 @@
   "license": "ISC",
   "dependencies": {
     "antlr4": "^4.8.0"
+  },
+  "devDependencies": {
+    "ts-node": "^8.8.1",
+    "typescript": "^3.8.3"
   }
 }
