@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "High-level SQL parser",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "antlr4ts-tsql": "antlr4ts -o output/tsql -package parsers grammars/tsql/TSqlLexer.g4 grammars/tsql/TSqlParser.g4",
     "build": "tsc",

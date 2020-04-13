@@ -10,6 +10,9 @@ export class ParsedSql {
   }
 
   getQueryAtLocation(stringIndex: number): ParsedQuery {
+    if (stringIndex === undefined || stringIndex === null) {
+      return null;
+    }
     const queryStartIndices: string[] = Object.keys(this.parsedQueries);
     for (let i = 0; i < queryStartIndices.length; i++) {
       const currentQueryStartIndex: number = Number(queryStartIndices[i]);
@@ -23,6 +26,14 @@ export class ParsedSql {
       }
     }
     return null;
+  }
+
+  getQueryLocations(): TokenLocation[] {
+    const locations: TokenLocation[] = [];
+    for (const parsedQuery of Object.values(this.parsedQueries)) {
+      locations.push(parsedQuery.queryLocation);
+    }
+    return locations;
   }
 
   _addQuery(parsedQuery: ParsedQuery) {

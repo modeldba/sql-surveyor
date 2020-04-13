@@ -3,6 +3,7 @@ import { TokenLocation } from '../models/TokenLocation';
 import { ParsedSql } from '../models/ParsedSql';
 import { ParsedQuery } from '../models/ParsedQuery';
 import { QueryType } from '../models/QueryType';
+import { ParserRuleContext } from 'antlr4ts';
 
 export class TSqlQueryListener implements TSqlParserListener {
 
@@ -20,19 +21,19 @@ export class TSqlQueryListener implements TSqlParserListener {
     this.parsedSql = new ParsedSql();
   }
 
-  enterDml_clause(ctx) {
+  enterDml_clause(ctx: any) {
     const queryLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     this.parsedSql._addQuery(new ParsedQuery(QueryType.DML, queryLocation));
   }
 
-  exitTable_name(ctx) {
+  exitTable_name(ctx: any) {
     const tableLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     const tableNameOrAlias: string = tableLocation.getToken(this.input);
     const parsedQuery = this.parsedSql.getQueryAtLocation(tableLocation.startIndex);
     parsedQuery._addTableNameLocation(tableNameOrAlias, tableLocation);
   }
 
-  exitTable_alias(ctx) {
+  exitTable_alias(ctx: any) {
     const aliasLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     const AsTableAliasLocation: TokenLocation = new TokenLocation(ctx._parent._start._line, ctx._parent._stop._line, ctx._parent._start.start, ctx._parent._stop.stop);
     const tableNameWithHintLocation: TokenLocation = new TokenLocation(ctx._parent._parent._start._line, ctx._parent._parent._stop._line, ctx._parent._parent._start.start, ctx._parent._parent._stop.stop);
@@ -41,7 +42,7 @@ export class TSqlQueryListener implements TSqlParserListener {
     parsedQuery._addAliasForTable(aliasLocation.getToken(this.input), tableNameLocation.getToken(this.input));
   }
 
-  exitSubquery(ctx) {
+  exitSubquery(ctx: any) {
     const subqueryLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     // TODO
   }
