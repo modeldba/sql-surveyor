@@ -1,6 +1,20 @@
 {
   "compilerOptions": {
-    "lib": ["es6", "dom", "es2017"],
-    "target": "es5",
-  }
+    "module": "commonjs",
+    "target": "es2019",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "incremental": true,
+    "declaration": true,
+    "outDir": "dist",
+    "experimentalDecorators": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

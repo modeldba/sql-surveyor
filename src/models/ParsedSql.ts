@@ -1,4 +1,5 @@
 import { ParsedQuery } from "./ParsedQuery";
+import { TokenLocation } from "./TokenLocation";
 
 export class ParsedSql {
 
