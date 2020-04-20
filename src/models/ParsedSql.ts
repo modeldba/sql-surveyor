@@ -10,6 +10,14 @@ export class ParsedSql {
   }
 
   getQueryAtLocation(stringIndex: number): ParsedQuery {
+    const queryIndex: number = this.getQueryIndexAtLocation(stringIndex);
+    if (queryIndex !== null) {
+      return Object.values(this.parsedQueries)[queryIndex];
+    }
+    return null;
+  }
+
+  getQueryIndexAtLocation(stringIndex: number): number {
     if (stringIndex === undefined || stringIndex === null) {
       return null;
     }
@@ -22,7 +30,7 @@ export class ParsedSql {
       }
       if (stringIndex > currentQueryStartIndex 
         && (nextQueryStartIndex === null || stringIndex < nextQueryStartIndex)) {
-        return this.parsedQueries[queryStartIndices[i]];
+        return i;
       }
     }
     return null;

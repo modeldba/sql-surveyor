@@ -23,7 +23,7 @@ export class TSqlQueryListener implements TSqlParserListener {
 
   enterDml_clause(ctx: any) {
     const queryLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
-    this.parsedSql._addQuery(new ParsedQuery(QueryType.DML, queryLocation));
+    this.parsedSql._addQuery(new ParsedQuery(QueryType.DML, queryLocation.getToken(this.input), queryLocation));
   }
 
   exitTable_name(ctx: any) {
@@ -48,7 +48,7 @@ export class TSqlQueryListener implements TSqlParserListener {
   }
 
   exitColumn_elem(ctx) {
-    console.dir(ctx.children);
+    // console.dir(ctx.children);
   }
 
 } 

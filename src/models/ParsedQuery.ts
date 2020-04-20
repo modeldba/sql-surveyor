@@ -18,11 +18,12 @@ export class ParsedQuery {
   subqueries: ParsedQuery[];
   commonTableExpressions: ParsedQuery[];
 
-  constructor(queryType: QueryType, queryLocation: TokenLocation) {
+  constructor(queryType: QueryType, query: string, queryLocation: TokenLocation) {
     this.outputColumns = [];
     this.referencedColumns = {};
     this.referencedTables = {};
     
+    this.query = query;
     this.queryLocation = queryLocation;
 
     this.subqueries = [];
