@@ -83,7 +83,6 @@ export class ParsedQuery {
   }
 
   _addAliasForTable(aliasName: string, tableName: string) {
-    console.log(tableName + '  ' + this.referencedTables[tableName]);
     this.referencedTables[tableName].aliases.add(aliasName);
   }
 

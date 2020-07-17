@@ -18,5 +18,5 @@
     "strictPropertyInitialization": false
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist", "**/*.d.ts", "parse.ts"]
+  "exclude": ["node_modules", "dist", "**/*.d.ts", "test", "parse.ts"]
 }
