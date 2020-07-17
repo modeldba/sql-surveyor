@@ -12,6 +12,8 @@ export class ParsedQuery {
   referencedColumns: { [columnName: string]: ReferencedColumn };
   referencedTables: { [tableName: string]: ReferencedTable };
 
+  tokens: { [queryStartIndex: number]: string };
+
   queryLocation: TokenLocation;
   errorLocation: TokenLocation;
 
@@ -23,6 +25,8 @@ export class ParsedQuery {
     this.referencedColumns = {};
     this.referencedTables = {};
     
+    this.tokens = {};
+
     this.query = query;
     this.queryLocation = queryLocation;
 
@@ -79,18 +83,19 @@ export class ParsedQuery {
   }
 
   _addAliasForTable(aliasName: string, tableName: string) {
+    console.log(tableName + '  ' + this.referencedTables[tableName]);
     this.referencedTables[tableName].aliases.add(aliasName);
   }
 
-  _addTableNameLocation(tableName: string, location: TokenLocation): void {
+  _addTableNameLocation(tableName: string, location: TokenLocation, schemaName: string, databaseName: string): void {
     const subquery = this._getSubqueryAtLocation(location);
     if (subquery !== null) {
-      subquery._addTableNameLocation(tableName, location);
+      subquery._addTableNameLocation(tableName, location, schemaName, databaseName);
       return;
     }
     const cte = this._getCommonTableExpressionAtLocation(location);
     if (cte !== null) {
-      cte._addTableNameLocation(tableName, location);
+      cte._addTableNameLocation(tableName, location, schemaName, databaseName);
       return;
     }
     const aliasTableName = this.getTableFromAlias(tableName);
@@ -99,8 +104,13 @@ export class ParsedQuery {
     }
     if (this.referencedTables[tableName] === undefined) {
       this.referencedTables[tableName] = new ReferencedTable(tableName);
+      this.referencedTables[tableName].schemaName = schemaName;
+      this.referencedTables[tableName].databaseName = databaseName;
     }
     this.referencedTables[tableName].locations.add(location);
   }
 
+  _addToken(location: TokenLocation, token: string) {
+    this.tokens[location.startIndex] = token;
+  }
 }

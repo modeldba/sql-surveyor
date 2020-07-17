@@ -28,7 +28,7 @@ export class ParsedSql {
       if (queryStartIndices[i + 1] !== undefined) {
         nextQueryStartIndex = Number(queryStartIndices[i + 1]);
       }
-      if (stringIndex > currentQueryStartIndex 
+      if (stringIndex >= currentQueryStartIndex 
         && (nextQueryStartIndex === null || stringIndex < nextQueryStartIndex)) {
         return i;
       }

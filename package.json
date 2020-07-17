@@ -6,7 +6,8 @@
   "types": "index.d.ts",
   "scripts": {
     "antlr4ts-tsql": "antlr4ts -o output/tsql -package parsers grammars/tsql/TSqlLexer.g4 grammars/tsql/TSqlParser.g4",
-    "build": "tsc",
+    "build": "tsc --build --clean && tsc",
+    "parseTest": "npx ts-node parse.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "modelDBA",

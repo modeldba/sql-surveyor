@@ -4,12 +4,11 @@ import {TSqlParser} from './output/tsql/TSqlParser.js';
 import {TSqlLexer} from './output/tsql/TSqlLexer.js';
 import {CaseChangingStream} from './src/parsing/CaseChangingStream'
 import { TokenLocation } from './src/models/TokenLocation';
-import { SQLSurveyor } from './src/SQLSurveyor';
-import { SQLDialect } from './src/models/SQLDialect';
+import { SQLSurveyor, SQLDialect } from './dist/index';
 
 // const input = 'SELECT * FROM tableName t1 \r\n JOIN tableName2 t2 ON t1.id = t2.id';
 // const input = 'SELECT t1.val FROM tableName as t1 where t1.col1 = 1 and (select 1 from tableName2) > 0';
-const input = 'SELECT * from tableName t1 \r\n JOIN tableName2 \r\n ON t1.val = otherVal;';
+const input = 'SELECT * from [database].[dbo].[tableName] t1 \r\n JOIN tableName2 \r\n ON t1.val = otherVal;';
 
 // const chars = new InputStream(input);
 // const caseChangingCharStream = new CaseChangingStream(chars, true);;
