@@ -3,6 +3,7 @@ import { OutputColumn } from "./OutputColumn";
 import { ReferencedColumn } from "./ReferencedColumn";
 import { ReferencedTable } from "./ReferencedTable";
 import { TokenLocation } from "./TokenLocation";
+import { Token } from "./Token";
 
 export class ParsedQuery {
 
@@ -12,7 +13,7 @@ export class ParsedQuery {
   referencedColumns: { [columnName: string]: ReferencedColumn };
   referencedTables: { [tableName: string]: ReferencedTable };
 
-  tokens: { [queryStartIndex: number]: string };
+  tokens: { [queryStartIndex: number]: Token };
 
   queryLocation: TokenLocation;
   errorLocation: TokenLocation;
@@ -72,6 +73,49 @@ export class ParsedQuery {
     return null;
   }
 
+  getTokenAtLocation(stringIndex: number): Token {
+    if (stringIndex === undefined || stringIndex === null) {
+      return null;
+    }
+    const tokenStartIndices: string[] = Object.keys(this.tokens);
+    for (let i = 0; i < tokenStartIndices.length; i++) {
+      const currentTokenStartIndex: number = Number(tokenStartIndices[i]);
+      let nextTokenStartIndex: number = null;
+      if (tokenStartIndices[i + 1] !== undefined) {
+        nextTokenStartIndex = Number(tokenStartIndices[i]);
+      }
+      if (stringIndex >= currentTokenStartIndex
+          && (nextTokenStartIndex === null || stringIndex < nextTokenStartIndex)) {
+        return this.tokens[currentTokenStartIndex];
+      }
+    }
+    return null;
+  }
+
+  getPreviousTokenFromLocation(stringIndex: number): Token {
+    if (stringIndex === undefined || stringIndex === null) {
+      return null;
+    }
+    const tokenStartIndices: string[] = Object.keys(this.tokens);
+    let previousTokenStartIndex: number = null;
+    for (let i = 0; i < tokenStartIndices.length; i++) {
+      const currentTokenStartIndex: number = Number(tokenStartIndices[i]);
+      let nextTokenStartIndex: number = null;
+      if (tokenStartIndices[i + 1] !== undefined) {
+        nextTokenStartIndex = Number(tokenStartIndices[i]);
+      }
+      if (stringIndex >= currentTokenStartIndex
+          && (nextTokenStartIndex === null || stringIndex < nextTokenStartIndex)) {
+        if (previousTokenStartIndex === null) {
+          return null; // No previous token, at the first token
+        }
+        return this.tokens[previousTokenStartIndex];
+      }
+      previousTokenStartIndex = currentTokenStartIndex;
+    }
+    return null;
+  }
+
   _getSubqueryAtLocation(location: TokenLocation): ParsedQuery {
     // TODO: Support subquery check
     return null;
@@ -110,6 +154,6 @@ export class ParsedQuery {
   }
 
   _addToken(location: TokenLocation, token: string) {
-    this.tokens[location.startIndex] = token;
+    this.tokens[location.startIndex] = new Token(token, location);
   }
 }
