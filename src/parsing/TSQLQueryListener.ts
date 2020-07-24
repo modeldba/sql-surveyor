@@ -50,13 +50,4 @@ export class TSqlQueryListener implements TSqlParserListener {
     // console.dir(ctx.children);
   }
 
-  visitTerminal(node) {
-    const tokenLocation: TokenLocation = new TokenLocation(node._symbol._line, node._symbol._line, node._symbol.start, node._symbol.stop);
-    const parsedQuery = this.parsedSql.getQueryAtLocation(tokenLocation.startIndex);
-    const token = tokenLocation.getToken(this.input);
-    if (token.length > 0 && parsedQuery !== null) {
-      parsedQuery._addToken(tokenLocation, token);
-    }
-  }
-
 } 

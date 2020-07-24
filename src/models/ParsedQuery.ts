@@ -82,7 +82,7 @@ export class ParsedQuery {
       const currentTokenStartIndex: number = Number(tokenStartIndices[i]);
       let nextTokenStartIndex: number = null;
       if (tokenStartIndices[i + 1] !== undefined) {
-        nextTokenStartIndex = Number(tokenStartIndices[i]);
+        nextTokenStartIndex = Number(tokenStartIndices[i + 1]);
       }
       if (stringIndex >= currentTokenStartIndex
           && (nextTokenStartIndex === null || stringIndex < nextTokenStartIndex)) {
@@ -102,7 +102,7 @@ export class ParsedQuery {
       const currentTokenStartIndex: number = Number(tokenStartIndices[i]);
       let nextTokenStartIndex: number = null;
       if (tokenStartIndices[i + 1] !== undefined) {
-        nextTokenStartIndex = Number(tokenStartIndices[i]);
+        nextTokenStartIndex = Number(tokenStartIndices[i + 1]);
       }
       if (stringIndex >= currentTokenStartIndex
           && (nextTokenStartIndex === null || stringIndex < nextTokenStartIndex)) {
