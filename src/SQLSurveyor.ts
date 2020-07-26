@@ -7,7 +7,7 @@ import {TSqlLexer} from '../output/tsql/TSqlLexer';
 import { ANTLRInputStream, CommonTokenStream, ConsoleErrorListener, Parser, BufferedTokenStream, CommonToken, Token } from 'antlr4ts';
 import { ParseTreeWalker } from "antlr4ts/tree/ParseTreeWalker";
 import { PredictionMode } from "antlr4ts/atn/PredictionMode";
-import { TokenLocation } from "..";
+import { TokenLocation } from "./models/TokenLocation";
 import { CodeCompletionCore, SymbolTable } from "antlr4-c3";
 import { AutocompleteOption } from "./models/AutocompleteOption";
 import { AutocompleteOptionType } from "./models/AutocompleteOptionType";
@@ -76,13 +76,12 @@ export class SQLSurveyor {
     }
     const whitespaceLexer = new WhitespaceLexer(sqlScript);
     const allTokens = new CommonTokenStream(whitespaceLexer);
-    const tokenIndex = this.getTokenIndexAt(allTokens.getTokens(), indexToAutocomplete);
+    const tokenIndex = this._getTokenIndexAt(allTokens.getTokens(), sqlScript, indexToAutocomplete);
     if (tokenIndex === null) {
       return null;
     }
     const token: any = allTokens.getTokens()[tokenIndex];
-    const tokenLocation = new TokenLocation(token._line, token._line, token.start, token.stop);
-    const tokenString = tokenLocation.getToken(sqlScript);
+    const tokenString = this._getTokenString(token, sqlScript, indexToAutocomplete);
     tokens.getTokens(); // Needed for CoreCompletionCore to process correctly, see: https://github.com/mike-lischke/antlr4-c3/issues/42
     const candidates = core.collectCandidates(tokenIndex);
     const autocompleteOptions: AutocompleteOption[] = [];
@@ -136,7 +135,7 @@ export class SQLSurveyor {
     return parser;
   }
 
-  getTokenIndexAt(tokens: any[], offset: number): number {
+  _getTokenIndexAt(tokens: any[], fullString: string, offset: number): number {
     if (tokens.length === 0) {
       return null;
     }
@@ -155,7 +154,30 @@ export class SQLSurveyor {
       }
       i++;
     }
+    // If we didn't find the token above and the last
+    // character in the autocomplete is whitespace, 
+    // start autocompleting for the next token
+    if (/\s$/.test(fullString)) {
+      return i - 1;
+    }
     return lastNonEOFToken;
   }
 
+  _getTokenString(token: any, fullString: string, offset: number): string {
+    if (token !== null && token.type !== Token.EOF) {
+      let stop = token.stop;
+      if (offset - 1 < stop) {
+        stop = offset - 1;
+      }
+      const tokenLocation = new TokenLocation(token._line, token._line, token.start, stop);
+      return tokenLocation.getToken(fullString);
+    }
+    return '';
+  }
+
 }
+
+const input = 'SELECT * FROM';
+const surveyor = new SQLSurveyor(SQLDialect.TSQL);
+const autocompleteOptions = surveyor.autocomplete(input, 11);
+console.dir(autocompleteOptions, { depth: null });
