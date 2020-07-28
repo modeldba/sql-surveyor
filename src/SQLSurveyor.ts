@@ -100,8 +100,10 @@ export class SQLSurveyor {
         if (followOnTokenValue.startsWith("'") && followOnTokenValue.endsWith("'")) {
           followOnTokenValue = followOnTokenValue.substring(1, followOnTokenValue.length - 1);
         }
-        // TODO: If followOnToken is a symbol, don't include a space
-        candidateTokenValue += ' ' + followOnTokenValue;
+        if (!(followOnTokenValue.length === 1 && /[^\w\s]/.test(followOnTokenValue))) {
+          candidateTokenValue += ' ';
+        }
+        candidateTokenValue += followOnTokenValue;
       }
       if (tokenString.length === 0 || candidateTokenValue.startsWith(tokenString.toUpperCase())) {
         autocompleteOptions.push(new AutocompleteOption(candidateTokenValue, AutocompleteOptionType.KEYWORD));
