@@ -47,7 +47,21 @@ export class TSqlQueryListener implements TSqlParserListener {
   }
 
   exitColumn_elem(ctx) {
-    // console.dir(ctx.children);
+    const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+    const parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
+    const columnText = columnLocation.getToken(this.input);
+    let columnName = columnText;
+    let tableNameOrAlias = null;
+    if (columnText.includes('.')) {
+      const columnTextSplit: string[] = columnText.split('.');
+      columnName = columnTextSplit[1];
+      tableNameOrAlias = columnTextSplit[0];
+    }
+    parsedQuery._addOutputColumn(columnName, tableNameOrAlias);
+  }
+
+  exitAsterisk(ctx) {
+    this.exitColumn_elem(ctx);
   }
 
 } 

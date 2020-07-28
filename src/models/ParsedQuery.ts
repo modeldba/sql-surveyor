@@ -126,8 +126,23 @@ export class ParsedQuery {
     return null;
   }
 
-  _addAliasForTable(aliasName: string, tableName: string) {
+  _addAliasForTable(aliasName: string, tableName: string): void {
     this.referencedTables[tableName].aliases.add(aliasName);
+  }
+
+  _addOutputColumn(columnName: string, tableNameOrAlias: string): void {
+    let tableName = null;
+    let tableAlias = null;
+    if (tableNameOrAlias !== null) {
+      tableName = this.getTableFromAlias(tableNameOrAlias);
+      if (tableName !== null) {
+        tableAlias = tableNameOrAlias;
+      } else {
+        tableName = tableNameOrAlias;
+      }
+    }
+    const outputColumn = new OutputColumn(columnName, tableName, tableAlias);
+    this.outputColumns.push(outputColumn);
   }
 
   _addTableNameLocation(tableName: string, location: TokenLocation, schemaName: string, databaseName: string): void {
@@ -153,7 +168,33 @@ export class ParsedQuery {
     this.referencedTables[tableName].locations.add(location);
   }
 
-  _addToken(location: TokenLocation, token: string) {
+  _addToken(location: TokenLocation, token: string): void {
     this.tokens[location.startIndex] = new Token(token, location);
+  }
+
+  _consolidateTables(): void {
+    const tableKeysToRemove: string[] = [];
+    for (const tableName in this.referencedTables) {
+      const realTableName = this.getTableFromAlias(tableName);
+      if (realTableName !== null) {
+        tableKeysToRemove.push(tableName);
+        for (const location of this.referencedTables[tableName].locations) {
+          this._addTableNameLocation(realTableName, location, this.referencedTables[tableName].schemaName, this.referencedTables[tableName].databaseName);
+        }
+      }
+    }
+    for (const key of tableKeysToRemove) {
+      delete this.referencedTables[key];
+    }
+
+    for (const outputColumn of this.outputColumns) {
+      if (outputColumn.tableName !== null) {
+        const realTableName = this.getTableFromAlias(outputColumn.tableName);
+        if (realTableName !== null) {
+          outputColumn.tableAlias = outputColumn.tableName;
+          outputColumn.tableName = realTableName;
+        }
+      }
+    }
   }
 }

@@ -33,6 +33,9 @@ export class SQLSurveyor {
     // Populate the parsedSql object on the listener
     // @ts-ignore Weak Type Detection
     ParseTreeWalker.DEFAULT.walk(listener, parsedTree);
+    for (const parsedQuery of Object.values(listener.parsedSql.parsedQueries)) {
+      parsedQuery._consolidateTables();
+    }
     
     // Load the tokens
     for (const commonToken of tokens.getTokens() as any[]) {
@@ -70,6 +73,7 @@ export class SQLSurveyor {
       ...preferredRulesColumn,
       ...preferredRulesTable
     ]);
+    // TODO: Ignore ID tokens
     let indexToAutocomplete = sqlScript.length - 1;
     if (atIndex !== null && atIndex !== undefined) {
       indexToAutocomplete = atIndex;
@@ -96,6 +100,7 @@ export class SQLSurveyor {
         if (followOnTokenValue.startsWith("'") && followOnTokenValue.endsWith("'")) {
           followOnTokenValue = followOnTokenValue.substring(1, followOnTokenValue.length - 1);
         }
+        // TODO: If followOnToken is a symbol, don't include a space
         candidateTokenValue += ' ' + followOnTokenValue;
       }
       if (tokenString.length === 0 || candidateTokenValue.startsWith(tokenString.toUpperCase())) {
@@ -176,8 +181,3 @@ export class SQLSurveyor {
   }
 
 }
-
-const input = 'SELECT * FROM';
-const surveyor = new SQLSurveyor(SQLDialect.TSQL);
-const autocompleteOptions = surveyor.autocomplete(input, 11);
-console.dir(autocompleteOptions, { depth: null });

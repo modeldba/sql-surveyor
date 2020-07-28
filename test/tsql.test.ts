@@ -36,6 +36,11 @@ test('that table names and aliases are correctly parsed', () => {
   expect(tableName2.locations.has(new TokenLocation(1, 1, 62, 64)));
   expect(tableName2.schemaName).toBeNull();
   expect(tableName2.databaseName).toBeNull();
+
+  expect(parsedQuery.outputColumns.length).toBe(1);
+  expect(parsedQuery.outputColumns[0].columnName).toBe('*');
+  expect(parsedQuery.outputColumns[0].tableName).toBeNull();
+  expect(parsedQuery.outputColumns[0].tableAlias).toBeNull();
 });
 
 
