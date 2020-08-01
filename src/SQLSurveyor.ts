@@ -69,10 +69,7 @@ export class SQLSurveyor {
       TSqlParser.RULE_output_column_name,
       TSqlParser.RULE_column_declaration
     ];
-    core.preferredRules = new Set([
-      ...preferredRulesColumn,
-      ...preferredRulesTable
-    ]);
+    const preferredRuleOptions = [preferredRulesTable, preferredRulesColumn];
     // TODO: Ignore ID tokens
     let indexToAutocomplete = sqlScript.length - 1;
     if (atIndex !== null && atIndex !== undefined) {
@@ -87,42 +84,48 @@ export class SQLSurveyor {
     const token: any = allTokens.getTokens()[tokenIndex];
     const tokenString = this._getTokenString(token, sqlScript, indexToAutocomplete);
     tokens.getTokens(); // Needed for CoreCompletionCore to process correctly, see: https://github.com/mike-lischke/antlr4-c3/issues/42
-    const candidates = core.collectCandidates(tokenIndex);
     const autocompleteOptions: AutocompleteOption[] = [];
-    for (const candidateToken of candidates.tokens) {
-      let candidateTokenValue = parser.vocabulary.getDisplayName(candidateToken[0]);
-      if (candidateTokenValue.startsWith("'") && candidateTokenValue.endsWith("'")) {
-        candidateTokenValue = candidateTokenValue.substring(1, candidateTokenValue.length - 1);
-      }
-      let followOnTokens = candidateToken[1];
-      for (const followOnToken of followOnTokens) {
-        let followOnTokenValue = parser.vocabulary.getDisplayName(followOnToken);
-        if (followOnTokenValue.startsWith("'") && followOnTokenValue.endsWith("'")) {
-          followOnTokenValue = followOnTokenValue.substring(1, followOnTokenValue.length - 1);
+    // Depending on the SQL grammar, we may not get both Tables and Column rules,
+    // even if both are viable options for autocompletion
+    // So, instead of using all preferredRules at once, we'll do them separate
+    for (const preferredRules of preferredRuleOptions) {
+      core.preferredRules = new Set(preferredRules);
+      const candidates = core.collectCandidates(tokenIndex);
+      for (const candidateToken of candidates.tokens) {
+        let candidateTokenValue = parser.vocabulary.getDisplayName(candidateToken[0]);
+        if (candidateTokenValue.startsWith("'") && candidateTokenValue.endsWith("'")) {
+          candidateTokenValue = candidateTokenValue.substring(1, candidateTokenValue.length - 1);
         }
-        if (!(followOnTokenValue.length === 1 && /[^\w\s]/.test(followOnTokenValue))) {
-          candidateTokenValue += ' ';
+        let followOnTokens = candidateToken[1];
+        for (const followOnToken of followOnTokens) {
+          let followOnTokenValue = parser.vocabulary.getDisplayName(followOnToken);
+          if (followOnTokenValue.startsWith("'") && followOnTokenValue.endsWith("'")) {
+            followOnTokenValue = followOnTokenValue.substring(1, followOnTokenValue.length - 1);
+          }
+          if (!(followOnTokenValue.length === 1 && /[^\w\s]/.test(followOnTokenValue))) {
+            candidateTokenValue += ' ';
+          }
+          candidateTokenValue += followOnTokenValue;
         }
-        candidateTokenValue += followOnTokenValue;
+        if (tokenString.length === 0 || (candidateTokenValue.startsWith(tokenString.toUpperCase()) && autocompleteOptions.find(option => option.value === candidateTokenValue) === undefined)) {
+          autocompleteOptions.push(new AutocompleteOption(candidateTokenValue, AutocompleteOptionType.KEYWORD));
+        }
       }
-      if (tokenString.length === 0 || candidateTokenValue.startsWith(tokenString.toUpperCase())) {
-        autocompleteOptions.push(new AutocompleteOption(candidateTokenValue, AutocompleteOptionType.KEYWORD));
+      let isTableCandidatePosition = false;
+      let isColumnCandidatePosition = false;
+      for (const rule of candidates.rules) {
+        if (preferredRulesTable.includes(rule[0])) {
+          isTableCandidatePosition = true;
+        } else if (preferredRulesColumn.includes(rule[0])) {
+          isColumnCandidatePosition = true;
+        }
       }
-    }
-    let isTableCandidatePosition = false;
-    let isColumnCandidatePosition = false;
-    for (const rule of candidates.rules) {
-      if (preferredRulesTable.includes(rule[0])) {
-        isTableCandidatePosition = true;
-      } else if (preferredRulesColumn.includes(rule[0])) {
-        isColumnCandidatePosition = true;
+      if (isTableCandidatePosition) {
+        autocompleteOptions.unshift(new AutocompleteOption(null, AutocompleteOptionType.TABLE));
       }
-    }
-    if (isTableCandidatePosition) {
-      autocompleteOptions.unshift(new AutocompleteOption(null, AutocompleteOptionType.TABLE));
-    }
-    if (isColumnCandidatePosition) {
-      autocompleteOptions.unshift(new AutocompleteOption(null, AutocompleteOptionType.COLUMN));
+      if (isColumnCandidatePosition) {
+        autocompleteOptions.unshift(new AutocompleteOption(null, AutocompleteOptionType.COLUMN));
+      }
     }
     return autocompleteOptions;
   }

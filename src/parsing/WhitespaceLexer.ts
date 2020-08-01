@@ -2,7 +2,7 @@ import { TokenSource, Token, CharStream, TokenFactory, CommonToken } from "antlr
 
 /**
  * A very simple lexer for splitting a string into tokens based on 
- * whitespace. Handles SQL quote characters (i.e. ')
+ * whitespace. Handles SQL quote characters (i.e. '). Also splits ; as a separate token
  * 
  * THIS SHOULD NOT BE USED FOR MOST ANTLR4 TASKS.
  * 
@@ -31,7 +31,7 @@ export class WhitespaceLexer implements TokenSource {
       if (currentChar === "'" && this.value[this.currentIndex - 1] !== '\\') {
         this.insideQuote = !this.insideQuote;
       }
-      if (notWhitespaceRegex.test(currentChar) || this.insideQuote) {
+      if ((notWhitespaceRegex.test(currentChar) && currentChar !== ';') || this.insideQuote) {
         if (start === null) {
           start = this.currentIndex;
         }
@@ -40,10 +40,19 @@ export class WhitespaceLexer implements TokenSource {
         }
       } else if (start !== null) {
         stop = this.currentIndex - 1;
+        if (currentChar === ';') {
+          // The next block will iterate past the current ';'
+          // Need to back up so that on the next call to nextToken, the ';' will be identified again
+          this.currentIndex--;
+        }
       }
       if (start !== null && stop !== null) {
         this.currentIndex++;
         return new CommonToken(Token.DEFAULT_CHANNEL, this.value.substring(start, stop + 1), {}, null, start, stop);
+      }
+      if (currentChar === ';' && !this.insideQuote) {
+        this.currentIndex++;
+        return new CommonToken(Token.DEFAULT_CHANNEL, ';', {}, null, this.currentIndex - 1, this.currentIndex - 1);
       }
       this.currentIndex++;
     }

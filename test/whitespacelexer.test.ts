@@ -8,7 +8,7 @@ test('WhitespaceLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
   expect(lexer.nextToken().text).toBe('table');
-  expect(lexer.nextToken().type !== Token.EOF);
+  expect(lexer.nextToken().type).toBe(Token.EOF);
 
   sqlString = '  SELECT \t* \r\n FROM  table   ';
   lexer = new WhitespaceLexer(sqlString);
@@ -16,7 +16,7 @@ test('WhitespaceLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
   expect(lexer.nextToken().text).toBe('table');
-  expect(lexer.nextToken().type !== Token.EOF);
+  expect(lexer.nextToken().type).toBe(Token.EOF);
 
   sqlString = "SELECT * FROM table WHERE column = 'test'";
   lexer = new WhitespaceLexer(sqlString);
@@ -28,7 +28,7 @@ test('WhitespaceLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().text).toBe('column');
   expect(lexer.nextToken().text).toBe('=');
   expect(lexer.nextToken().text).toBe("'test'");
-  expect(lexer.nextToken().type !== Token.EOF);
+  expect(lexer.nextToken().type).toBe(Token.EOF);
 
   sqlString = "SELECT * FROM table WHERE column = 'test and a missing quote";
   lexer = new WhitespaceLexer(sqlString);
@@ -52,5 +52,31 @@ test('WhitespaceLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().text).toBe('column');
   expect(lexer.nextToken().text).toBe('=');
   expect(lexer.nextToken().text).toBe("'test and a \r\n newline'");
-  expect(lexer.nextToken().type !== Token.EOF);
-}); 
+  expect(lexer.nextToken().type).toBe(Token.EOF);
+
+  sqlString = "SELECT * FROM table; SELECT * FROM table2 ;SELECT * FROM table3;SELECT * FROM table4 ; ";
+  lexer = new WhitespaceLexer(sqlString);
+  expect(lexer.nextToken().text).toBe('SELECT');
+  expect(lexer.nextToken().text).toBe('*');
+  expect(lexer.nextToken().text).toBe('FROM');
+  expect(lexer.nextToken().text).toBe('table');
+  expect(lexer.nextToken().text).toBe(';');
+  expect(lexer.nextToken().text).toBe('SELECT');
+  expect(lexer.nextToken().text).toBe('*');
+  expect(lexer.nextToken().text).toBe('FROM');
+  expect(lexer.nextToken().text).toBe('table2');
+  expect(lexer.nextToken().text).toBe(';');
+  expect(lexer.nextToken().text).toBe('SELECT');
+  expect(lexer.nextToken().text).toBe('*');
+  expect(lexer.nextToken().text).toBe('FROM');
+  expect(lexer.nextToken().text).toBe('table3');
+  expect(lexer.nextToken().text).toBe(';');
+  expect(lexer.nextToken().text).toBe('SELECT');
+  expect(lexer.nextToken().text).toBe('*');
+  expect(lexer.nextToken().text).toBe('FROM');
+  expect(lexer.nextToken().text).toBe('table4');
+  expect(lexer.nextToken().text).toBe(';');
+  expect(lexer.nextToken().type).toBe(Token.EOF);
+
+  
+});
