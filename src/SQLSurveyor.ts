@@ -50,6 +50,11 @@ export class SQLSurveyor {
   }
 
   autocomplete(sqlScript: string, atIndex?: number): AutocompleteOption[] {
+    if (atIndex !== undefined && atIndex !== null) {
+      // Remove everything after the index we want to get suggestions for,
+      // it's not needed and keeping it in may impact which token gets selected for prediction
+      sqlScript = sqlScript.substring(0, atIndex + 1);
+    }
     const tokens = this._getTokens(sqlScript);
     const parser = this._getParser(tokens);
     const core = new CodeCompletionCore(parser);

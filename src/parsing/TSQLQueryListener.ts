@@ -22,6 +22,13 @@ export class TSqlQueryListener implements TSqlParserListener {
     this.parsedSql = new ParsedSql();
   }
 
+  unquote(value: string) {
+    if (value.startsWith('[') && value.endsWith(']')) {
+      return value.slice(1, value.length - 1);
+    }
+    return value;
+  }
+
   enterDml_clause(ctx: any) {
     const queryLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     this.parsedSql._addQuery(new ParsedQuery(QueryType.DML, queryLocation.getToken(this.input), queryLocation));
@@ -29,16 +36,16 @@ export class TSqlQueryListener implements TSqlParserListener {
 
   exitTable_name(ctx: any) {
     const tableLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
-    const referencedTable = ParseHelpers.parseContextToReferencedTable(ctx, this.input);
+    const referencedTable = ParseHelpers.parseContextToReferencedTable(ctx, this.input, this.unquote);
     const parsedQuery = this.parsedSql.getQueryAtLocation(tableLocation.startIndex);
     parsedQuery._addTableNameLocation(referencedTable.tableName, tableLocation, referencedTable.schemaName, referencedTable.databaseName);
   }
 
   exitTable_alias(ctx: any) {
     const aliasLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
-    const referencedTable = ParseHelpers.parseContextToReferencedTable(ctx._parent._parent.children[0].children[0], this.input);
+    const referencedTable = ParseHelpers.parseContextToReferencedTable(ctx._parent._parent.children[0].children[0], this.input, this.unquote);
     const parsedQuery = this.parsedSql.getQueryAtLocation(aliasLocation.startIndex);
-    parsedQuery._addAliasForTable(aliasLocation.getToken(this.input), referencedTable.tableName);
+    parsedQuery._addAliasForTable(this.unquote(aliasLocation.getToken(this.input)), referencedTable.tableName);
   }
 
   exitSubquery(ctx: any) {
@@ -49,7 +56,7 @@ export class TSqlQueryListener implements TSqlParserListener {
   exitColumn_elem(ctx) {
     const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     const parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
-    const columnText = columnLocation.getToken(this.input);
+    const columnText = this.unquote(columnLocation.getToken(this.input));
     let columnName = columnText;
     let tableNameOrAlias = null;
     if (columnText.includes('.')) {

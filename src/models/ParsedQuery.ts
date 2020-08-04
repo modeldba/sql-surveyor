@@ -97,12 +97,24 @@ export class ParsedQuery {
       return null;
     }
     const tokenStartIndices: string[] = Object.keys(this.tokens);
+    const lastIndex = tokenStartIndices[tokenStartIndices.length - 1];
+    if (tokenStartIndices.length > 0 && stringIndex >= (parseInt(lastIndex) + this.tokens[lastIndex].value.length)) {
+      // Index is past the tokens in this query, previous token is the last token
+      return this.tokens[lastIndex];
+    }
     let previousTokenStartIndex: number = null;
     for (let i = 0; i < tokenStartIndices.length; i++) {
       const currentTokenStartIndex: number = Number(tokenStartIndices[i]);
       let nextTokenStartIndex: number = null;
       if (tokenStartIndices[i + 1] !== undefined) {
         nextTokenStartIndex = Number(tokenStartIndices[i + 1]);
+      }
+      const currentTokenStopIndex = this.tokens[tokenStartIndices[i]].location.stopIndex;
+      if (stringIndex >= currentTokenStopIndex 
+          && nextTokenStartIndex !== null 
+          && stringIndex < nextTokenStartIndex) {
+        // We're past the current token, but before the next token
+        return this.tokens[currentTokenStartIndex];
       }
       if (stringIndex >= currentTokenStartIndex
           && (nextTokenStartIndex === null || stringIndex < nextTokenStartIndex)) {
