@@ -7,7 +7,7 @@ import { TokenSource, Token, CharStream, TokenFactory, CommonToken } from "antlr
  * THIS SHOULD NOT BE USED FOR MOST ANTLR4 TASKS.
  * 
  * It is designed to be used to find the correct token index at
- * any string location, regardless of the validity of the string.
+ * any string location, regardless of the validity of the SQL string.
  * See SQLSurveyer.getTokenIndexAt for usage.
  */
 export class SimpleSQLLexer implements TokenSource {
@@ -16,7 +16,7 @@ export class SimpleSQLLexer implements TokenSource {
   currentIndex: number;
   insideQuote: boolean;
 
-  specialCharacters: string[] = [';', '.'];
+  specialCharacters: string[] = [';', '.', '(', ')'];
 
   constructor(value: string) {
     this.value = value;
@@ -43,7 +43,7 @@ export class SimpleSQLLexer implements TokenSource {
       } else if (start !== null) {
         stop = this.currentIndex - 1;
         if (this.specialCharacters.includes(currentChar)) {
-          // The next block will iterate past the current ';' or '.'
+          // The next block will iterate past the current special character
           // Need to back up so that on the next call to nextToken, the special character will be identified again
           this.currentIndex--;
         }

@@ -92,4 +92,24 @@ test('SimpleSQLLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().text).toBe('=');
   expect(lexer.nextToken().text).toBe('0');
   expect(lexer.nextToken().text).toBe(';');
+  expect(lexer.nextToken().type).toBe(Token.EOF);
+
+  sqlString = "SELECT * FROM table1 t1 where (t1.column1 = 0);";
+  lexer = new SimpleSQLLexer(sqlString);
+  expect(lexer.nextToken().text).toBe('SELECT');
+  expect(lexer.nextToken().text).toBe('*');
+  expect(lexer.nextToken().text).toBe('FROM');
+  expect(lexer.nextToken().text).toBe('table1');
+  expect(lexer.nextToken().text).toBe('t1');
+  expect(lexer.nextToken().text).toBe('where');
+  expect(lexer.nextToken().text).toBe('(');
+  expect(lexer.nextToken().text).toBe('t1');
+  expect(lexer.nextToken().text).toBe('.');
+  expect(lexer.nextToken().text).toBe('column1');
+  expect(lexer.nextToken().text).toBe('=');
+  expect(lexer.nextToken().text).toBe('0');
+  expect(lexer.nextToken().text).toBe(')');
+  expect(lexer.nextToken().text).toBe(';');
+  expect(lexer.nextToken().type).toBe(Token.EOF);
+
 });
