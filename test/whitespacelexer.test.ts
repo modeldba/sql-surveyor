@@ -1,9 +1,9 @@
-import { WhitespaceLexer } from '../dist/index';
+import { SimpleSQLLexer } from '../dist/index';
 import { Token } from 'antlr4ts';
 
-test('WhitespaceLexer correctly parses SQL queries', () => {
+test('SimpleSQLLexer correctly parses SQL queries', () => {
   let sqlString = 'SELECT * FROM table';
-  let lexer = new WhitespaceLexer(sqlString);
+  let lexer = new SimpleSQLLexer(sqlString);
   expect(lexer.nextToken().text).toBe('SELECT');
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
@@ -11,7 +11,7 @@ test('WhitespaceLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().type).toBe(Token.EOF);
 
   sqlString = '  SELECT \t* \r\n FROM  table   ';
-  lexer = new WhitespaceLexer(sqlString);
+  lexer = new SimpleSQLLexer(sqlString);
   expect(lexer.nextToken().text).toBe('SELECT');
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
@@ -19,7 +19,7 @@ test('WhitespaceLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().type).toBe(Token.EOF);
 
   sqlString = "SELECT * FROM table WHERE column = 'test'";
-  lexer = new WhitespaceLexer(sqlString);
+  lexer = new SimpleSQLLexer(sqlString);
   expect(lexer.nextToken().text).toBe('SELECT');
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
@@ -31,7 +31,7 @@ test('WhitespaceLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().type).toBe(Token.EOF);
 
   sqlString = "SELECT * FROM table WHERE column = 'test and a missing quote";
-  lexer = new WhitespaceLexer(sqlString);
+  lexer = new SimpleSQLLexer(sqlString);
   expect(lexer.nextToken().text).toBe('SELECT');
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
@@ -43,7 +43,7 @@ test('WhitespaceLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().type !== Token.EOF);
 
   sqlString = "SELECT * FROM table WHERE column = 'test and a \r\n newline'   ";
-  lexer = new WhitespaceLexer(sqlString);
+  lexer = new SimpleSQLLexer(sqlString);
   expect(lexer.nextToken().text).toBe('SELECT');
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
@@ -55,7 +55,7 @@ test('WhitespaceLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().type).toBe(Token.EOF);
 
   sqlString = "SELECT * FROM table; SELECT * FROM table2 ;SELECT * FROM table3;SELECT * FROM table4 ; ";
-  lexer = new WhitespaceLexer(sqlString);
+  lexer = new SimpleSQLLexer(sqlString);
   expect(lexer.nextToken().text).toBe('SELECT');
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
@@ -78,5 +78,18 @@ test('WhitespaceLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().text).toBe(';');
   expect(lexer.nextToken().type).toBe(Token.EOF);
 
-  
+  sqlString = "SELECT * FROM table1 t1 where t1.column1 = 0;";
+  lexer = new SimpleSQLLexer(sqlString);
+  expect(lexer.nextToken().text).toBe('SELECT');
+  expect(lexer.nextToken().text).toBe('*');
+  expect(lexer.nextToken().text).toBe('FROM');
+  expect(lexer.nextToken().text).toBe('table1');
+  expect(lexer.nextToken().text).toBe('t1');
+  expect(lexer.nextToken().text).toBe('where');
+  expect(lexer.nextToken().text).toBe('t1');
+  expect(lexer.nextToken().text).toBe('.');
+  expect(lexer.nextToken().text).toBe('column1');
+  expect(lexer.nextToken().text).toBe('=');
+  expect(lexer.nextToken().text).toBe('0');
+  expect(lexer.nextToken().text).toBe(';');
 });

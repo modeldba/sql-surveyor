@@ -10,4 +10,4 @@ export * from './src/models/SQLDialect';
 export * from './src/models/Token';
 export * from './src/models/TokenLocation';
 
-export * from './src/parsing/WhitespaceLexer';
+export * from './src/parsing/SimpleSQLLexer';

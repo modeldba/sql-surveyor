@@ -11,7 +11,7 @@ import { TokenLocation } from "./models/TokenLocation";
 import { CodeCompletionCore, SymbolTable } from "antlr4-c3";
 import { AutocompleteOption } from "./models/AutocompleteOption";
 import { AutocompleteOptionType } from "./models/AutocompleteOptionType";
-import { WhitespaceLexer } from "./parsing/WhitespaceLexer";
+import { SimpleSQLLexer } from "./parsing/SimpleSQLLexer";
 
 export class SQLSurveyor {
 
@@ -75,13 +75,17 @@ export class SQLSurveyor {
       TSqlParser.RULE_column_declaration
     ];
     const preferredRuleOptions = [preferredRulesTable, preferredRulesColumn];
-    // TODO: Ignore ID tokens
+    const ignoreTokens = [
+      TSqlParser.DOT,
+      TSqlParser.ID
+    ]
+    core.ignoredTokens = new Set(ignoreTokens);
     let indexToAutocomplete = sqlScript.length - 1;
     if (atIndex !== null && atIndex !== undefined) {
       indexToAutocomplete = atIndex;
     }
-    const whitespaceLexer = new WhitespaceLexer(sqlScript);
-    const allTokens = new CommonTokenStream(whitespaceLexer);
+    const simpleSQLLexer = new SimpleSQLLexer(sqlScript);
+    const allTokens = new CommonTokenStream(simpleSQLLexer);
     const tokenIndex = this._getTokenIndexAt(allTokens.getTokens(), sqlScript, indexToAutocomplete);
     if (tokenIndex === null) {
       return null;

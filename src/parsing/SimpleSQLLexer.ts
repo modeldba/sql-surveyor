@@ -2,7 +2,7 @@ import { TokenSource, Token, CharStream, TokenFactory, CommonToken } from "antlr
 
 /**
  * A very simple lexer for splitting a string into tokens based on 
- * whitespace. Handles SQL quote characters (i.e. '). Also splits ; as a separate token
+ * whitespace. Handles SQL quote characters (i.e. '). Also splits ; and . as separate tokens
  * 
  * THIS SHOULD NOT BE USED FOR MOST ANTLR4 TASKS.
  * 
@@ -10,11 +10,13 @@ import { TokenSource, Token, CharStream, TokenFactory, CommonToken } from "antlr
  * any string location, regardless of the validity of the string.
  * See SQLSurveyer.getTokenIndexAt for usage.
  */
-export class WhitespaceLexer implements TokenSource {
+export class SimpleSQLLexer implements TokenSource {
 
   value: string;
   currentIndex: number;
   insideQuote: boolean;
+
+  specialCharacters: string[] = [';', '.'];
 
   constructor(value: string) {
     this.value = value;
@@ -31,7 +33,7 @@ export class WhitespaceLexer implements TokenSource {
       if (currentChar === "'" && this.value[this.currentIndex - 1] !== '\\') {
         this.insideQuote = !this.insideQuote;
       }
-      if ((notWhitespaceRegex.test(currentChar) && currentChar !== ';') || this.insideQuote) {
+      if ((notWhitespaceRegex.test(currentChar) && !this.specialCharacters.includes(currentChar)) || this.insideQuote) {
         if (start === null) {
           start = this.currentIndex;
         }
@@ -40,9 +42,9 @@ export class WhitespaceLexer implements TokenSource {
         }
       } else if (start !== null) {
         stop = this.currentIndex - 1;
-        if (currentChar === ';') {
-          // The next block will iterate past the current ';'
-          // Need to back up so that on the next call to nextToken, the ';' will be identified again
+        if (this.specialCharacters.includes(currentChar)) {
+          // The next block will iterate past the current ';' or '.'
+          // Need to back up so that on the next call to nextToken, the special character will be identified again
           this.currentIndex--;
         }
       }
@@ -50,9 +52,9 @@ export class WhitespaceLexer implements TokenSource {
         this.currentIndex++;
         return new CommonToken(Token.DEFAULT_CHANNEL, this.value.substring(start, stop + 1), {}, null, start, stop);
       }
-      if (currentChar === ';' && !this.insideQuote) {
+      if (this.specialCharacters.includes(currentChar) && !this.insideQuote) {
         this.currentIndex++;
-        return new CommonToken(Token.DEFAULT_CHANNEL, ';', {}, null, this.currentIndex - 1, this.currentIndex - 1);
+        return new CommonToken(Token.DEFAULT_CHANNEL, currentChar, {}, null, this.currentIndex - 1, this.currentIndex - 1);
       }
       this.currentIndex++;
     }
