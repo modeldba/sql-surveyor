@@ -15,4 +15,11 @@ export class TokenLocation {
     return input.substring(this.startIndex, this.stopIndex + 1);
   }
 
+  static clone(token: TokenLocation): TokenLocation {
+    if (token === undefined || token === null) {
+      return null;
+    }
+    return new TokenLocation(token.lineStart, token.lineEnd, token.startIndex, token.stopIndex);
+  }
+
 }

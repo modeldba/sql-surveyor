@@ -34,6 +34,12 @@ export class TSqlQueryListener implements TSqlParserListener {
     this.parsedSql._addQuery(new ParsedQuery(QueryType.DML, queryLocation.getToken(this.input), queryLocation));
   }
 
+  enterSubquery(ctx: any) {
+    const subqueryLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+    const query = this.parsedSql.getQueryAtLocation(subqueryLocation.startIndex);
+    query._addSubQuery(new ParsedQuery(QueryType.DML, subqueryLocation.getToken(this.input), subqueryLocation));
+  }
+
   exitTable_name(ctx: any) {
     const tableLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     const referencedTable = ParseHelpers.parseContextToReferencedTable(ctx, this.input, this.unquote);
@@ -48,23 +54,34 @@ export class TSqlQueryListener implements TSqlParserListener {
     parsedQuery._addAliasForTable(this.unquote(aliasLocation.getToken(this.input)), referencedTable.tableName);
   }
 
-  exitSubquery(ctx: any) {
-    const subqueryLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
-    // TODO
-  }
-
   exitColumn_elem(ctx) {
     const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
-    const parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
+    let parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
+    parsedQuery = parsedQuery.getSmallestQueryAtLocation(columnLocation.startIndex);
     const columnText = this.unquote(columnLocation.getToken(this.input));
     let columnName = columnText;
     let tableNameOrAlias = null;
     if (columnText.includes('.')) {
       const columnTextSplit: string[] = columnText.split('.');
-      columnName = columnTextSplit[1];
-      tableNameOrAlias = columnTextSplit[0];
+      columnName = columnTextSplit[columnTextSplit.length - 1];
+      tableNameOrAlias = columnTextSplit[columnTextSplit.length - 2];
     }
     parsedQuery._addOutputColumn(columnName, tableNameOrAlias);
+  }
+
+  exitFull_column_name(ctx) {
+    const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+    let parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
+    parsedQuery = parsedQuery.getSmallestQueryAtLocation(columnLocation.startIndex);
+    const columnText = this.unquote(columnLocation.getToken(this.input));
+    let columnName = columnText;
+    let tableNameOrAlias = null;
+    if (columnText.includes('.')) {
+      const columnTextSplit: string[] = columnText.split('.');
+      columnName = columnTextSplit[columnTextSplit.length - 1];
+      tableNameOrAlias = columnTextSplit[columnTextSplit.length - 2];
+    }
+    parsedQuery._addReferencedColumn(columnName, tableNameOrAlias, columnLocation);
   }
 
   exitAsterisk(ctx) {
