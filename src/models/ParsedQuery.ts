@@ -10,7 +10,7 @@ export class ParsedQuery {
   query: string;
   queryType: QueryType;
   outputColumns: OutputColumn[];
-  referencedColumns: { [columnName: string]: ReferencedColumn };
+  referencedColumns: ReferencedColumn[];
   referencedTables: { [tableName: string]: ReferencedTable };
 
   tokens: { [queryStartIndex: number]: Token };
@@ -23,7 +23,7 @@ export class ParsedQuery {
 
   constructor(queryType: QueryType, query: string, queryLocation: TokenLocation) {
     this.outputColumns = [];
-    this.referencedColumns = {};
+    this.referencedColumns = [];
     this.referencedTables = {};
     
     this.tokens = {};
@@ -43,7 +43,7 @@ export class ParsedQuery {
     }
     for (const query of [...Object.values(this.subqueries), ...Object.values(this.commonTableExpressions)]) {
       const queryReferencedTables: { [tableName: string]: ReferencedTable } = query.getAllReferencedTables();
-      for (const referencedTableName in query.getAllReferencedTables()) {
+      for (const referencedTableName in queryReferencedTables) {
         if (tables[referencedTableName] === undefined) {
           tables[referencedTableName] = ReferencedTable.clone(queryReferencedTables[referencedTableName]);
         } else {
@@ -62,9 +62,33 @@ export class ParsedQuery {
     return tables;
   }
 
-  getAllReferencedColumns(): { [columnName: string]: ReferencedColumn } {
-    // TODO merge all referenced columns from subqueries and CTE
-    return this.referencedColumns;
+  getAllReferencedColumns(): ReferencedColumn[] {
+    const columns: ReferencedColumn[] = [...this.referencedColumns];
+    for (const query of [...Object.values(this.subqueries), ...Object.values(this.commonTableExpressions)]) {
+      const queryReferencedColumns: ReferencedColumn[] = query.getAllReferencedColumns();
+      for (const referencedColumn of queryReferencedColumns) {
+        const existingReferencedColumnCandidates: ReferencedColumn[] = columns.filter(column => column.columnName === referencedColumn.columnName);
+        let matchedCandidate: boolean = false;
+        for (const existingReferencedColumnCandidate of existingReferencedColumnCandidates) {
+          if (existingReferencedColumnCandidate.tableAlias === referencedColumn.tableAlias
+              || existingReferencedColumnCandidate.tableName === referencedColumn.tableName) {
+            matchedCandidate = true;
+            if (existingReferencedColumnCandidate.tableName === null && referencedColumn.tableName !== null) {
+              existingReferencedColumnCandidate.tableName = referencedColumn.tableName;
+            }
+            if (existingReferencedColumnCandidate.tableAlias === null && referencedColumn.tableAlias !== null) {
+              existingReferencedColumnCandidate.tableAlias = referencedColumn.tableAlias;
+            }
+            referencedColumn.locations.forEach(location => existingReferencedColumnCandidate.locations.add(TokenLocation.clone(location)));
+            break;
+          }
+        }
+        if (!matchedCandidate) {
+          columns.push(referencedColumn);
+        }
+      }
+    }
+    return columns;
   }
   
   getTableFromAlias(alias: string): string {
@@ -160,10 +184,23 @@ export class ParsedQuery {
     return null;
   }
 
+  getNextTokenFromLocation(stringIndex: number): Token {
+    const previousToken = this.getPreviousTokenFromLocation(stringIndex);
+    if (previousToken === null) {
+      return null;
+    }
+    const tokenStartIndices: string[] = Object.keys(this.tokens);
+    const previousTokenIndex = tokenStartIndices.indexOf(previousToken.location.startIndex.toString());
+    const nextToken = this.tokens[tokenStartIndices[previousTokenIndex + 2]];
+    if (nextToken !== undefined && nextToken !== null) {
+      return nextToken;
+    }
+    return null;
+  }
+
   getReferencedColumn(columnName: string, tableName: string, tableAlias: string) {
-    for (const referencedColumnName in this.referencedColumns) {
-      if (referencedColumnName === columnName) {
-        const referencedColumn = this.referencedColumns[referencedColumnName];
+    for (const referencedColumn of this.referencedColumns) {
+      if (referencedColumn.columnName === columnName) {
         if ((tableName === null || referencedColumn.tableName === tableName) 
               && (tableAlias === null || referencedColumn.tableAlias === tableAlias)) {
            return referencedColumn;
@@ -267,9 +304,9 @@ export class ParsedQuery {
     }
     const existingReferencedColumn = this.getReferencedColumn(columnName, tableName, tableAlias);
     if (existingReferencedColumn !== null && existingReferencedColumn !== undefined) {
-      existingReferencedColumn.locations.push(location);
+      existingReferencedColumn.locations.add(location);
     } else {
-      this.referencedColumns[columnName] = new ReferencedColumn(columnName, tableName, tableAlias, location);
+      this.referencedColumns.push(new ReferencedColumn(columnName, tableName, tableAlias, location));
     }
   }
 

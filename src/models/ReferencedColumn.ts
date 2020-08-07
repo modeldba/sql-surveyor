@@ -4,15 +4,15 @@ export class ReferencedColumn {
   columnName: string;
   tableName: string;
   tableAlias: string;
-  locations: TokenLocation[];
+  locations: Set<TokenLocation>;
 
   constructor(columnName: string, tableName: string, tableAlias: string, location: TokenLocation) {
     this.columnName = columnName;
     this.tableName = tableName;
     this.tableAlias = tableAlias;
-    this.locations = [];
+    this.locations = new Set<TokenLocation>();
     if (location !== null && location !== undefined) {
-      this.locations.push(location);
+      this.locations.add(location);
     }
   }
 
