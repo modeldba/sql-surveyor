@@ -40,10 +40,17 @@ export class SQLSurveyor {
     // Load the tokens
     for (const commonToken of tokens.getTokens() as any[]) {
       const tokenLocation: TokenLocation = new TokenLocation(commonToken._line, commonToken._line, commonToken.start, commonToken.stop);
-      const parsedQuery = listener.parsedSql.getQueryAtLocation(commonToken.start);
+      let parsedQuery = listener.parsedSql.getQueryAtLocation(commonToken.start);
       const token = tokenLocation.getToken(sqlScript);
-      if (token.length > 0 && parsedQuery !== null) {
+      while (parsedQuery !== null) {
+        if (token.length > 0) {
           parsedQuery._addToken(tokenLocation, token);
+        }
+        let subParsedQuery = parsedQuery._getCommonTableExpressionAtLocation(commonToken.start);
+        if (subParsedQuery === null) {
+          subParsedQuery = parsedQuery._getSubqueryAtLocation(commonToken.start);
+        }
+        parsedQuery = subParsedQuery;
       }
     }
     return listener.parsedSql;

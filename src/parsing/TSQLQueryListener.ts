@@ -36,21 +36,24 @@ export class TSqlQueryListener implements TSqlParserListener {
 
   enterSubquery(ctx: any) {
     const subqueryLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
-    const query = this.parsedSql.getQueryAtLocation(subqueryLocation.startIndex);
-    query._addSubQuery(new ParsedQuery(QueryType.DML, subqueryLocation.getToken(this.input), subqueryLocation));
+    let parsedQuery = this.parsedSql.getQueryAtLocation(subqueryLocation.startIndex);
+    parsedQuery = parsedQuery.getSmallestQueryAtLocation(subqueryLocation.startIndex);
+    parsedQuery._addSubQuery(new ParsedQuery(QueryType.DML, subqueryLocation.getToken(this.input), subqueryLocation));
   }
 
   exitTable_name(ctx: any) {
     const tableLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     const referencedTable = ParseHelpers.parseContextToReferencedTable(ctx, this.input, this.unquote);
-    const parsedQuery = this.parsedSql.getQueryAtLocation(tableLocation.startIndex);
+    let parsedQuery = this.parsedSql.getQueryAtLocation(tableLocation.startIndex);
+    parsedQuery = parsedQuery.getSmallestQueryAtLocation(tableLocation.startIndex);
     parsedQuery._addTableNameLocation(referencedTable.tableName, tableLocation, referencedTable.schemaName, referencedTable.databaseName);
   }
 
   exitTable_alias(ctx: any) {
     const aliasLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     const referencedTable = ParseHelpers.parseContextToReferencedTable(ctx._parent._parent.children[0].children[0], this.input, this.unquote);
-    const parsedQuery = this.parsedSql.getQueryAtLocation(aliasLocation.startIndex);
+    let parsedQuery = this.parsedSql.getQueryAtLocation(aliasLocation.startIndex);
+    parsedQuery = parsedQuery.getSmallestQueryAtLocation(aliasLocation.startIndex);
     parsedQuery._addAliasForTable(this.unquote(aliasLocation.getToken(this.input)), referencedTable.tableName);
   }
 
