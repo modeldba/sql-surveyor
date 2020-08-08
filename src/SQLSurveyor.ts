@@ -53,6 +53,8 @@ export class SQLSurveyor {
         parsedQuery = subParsedQuery;
       }
     }
+
+    Object.values(listener.parsedSql.parsedQueries).forEach(parsedQuery => parsedQuery._setCommonTableExpressionNames());
     return listener.parsedSql;
   }
 

@@ -12,11 +12,13 @@ export class ParsedQuery {
   outputColumns: OutputColumn[];
   referencedColumns: ReferencedColumn[];
   referencedTables: { [tableName: string]: ReferencedTable };
-
+  
   tokens: { [queryStartIndex: number]: Token };
-
+  
   queryLocation: TokenLocation;
   errorLocation: TokenLocation;
+
+  commonTableExpressionName: string;
 
   subqueries: { [subqueryStartIndex: number]: ParsedQuery };
   commonTableExpressions: { [cteStartIndex: number]: ParsedQuery };
@@ -232,28 +234,29 @@ export class ParsedQuery {
   }
 
   _getSubqueryAtLocation(stringIndex: number): ParsedQuery {
-    const subqueryIndices = Object.keys(this.subqueries);
-    const subqueryIndex = this._getParsedQueryIndexAtLocation(stringIndex, subqueryIndices);
+    const subqueryIndex = this._getParsedQueryIndexAtLocation(stringIndex, this.subqueries);
     if (subqueryIndex !== null) {
+      const subqueryIndices = Object.keys(this.subqueries);
       return this.subqueries[subqueryIndices[subqueryIndex]];
     }
     return null;
   }
   
   _getCommonTableExpressionAtLocation(stringIndex: number): ParsedQuery {
-    const cteIndices = Object.keys(this.commonTableExpressions);
-    const cteIndex = this._getParsedQueryIndexAtLocation(stringIndex, cteIndices);
+    const cteIndex = this._getParsedQueryIndexAtLocation(stringIndex, this.commonTableExpressions);
     if (cteIndex !== null) {
+      const cteIndices = Object.keys(this.commonTableExpressions);
       return this.commonTableExpressions[cteIndices[cteIndex]];
     }
     return null;
   }
 
-  _getParsedQueryIndexAtLocation(stringIndex: number, queryStartIndices: string[]): number {
+  _getParsedQueryIndexAtLocation(stringIndex: number, queries: { [queryStartIndex: number]: ParsedQuery }): number {
     if (stringIndex === undefined || stringIndex === null
-        || queryStartIndices === undefined || queryStartIndices === null) {
+        || queries === undefined || queries === null) {
       return null;
     }
+    const queryStartIndices = Object.keys(queries);
     for (let i = 0; i < queryStartIndices.length; i++) {
       const currentQueryStartIndex: number = Number(queryStartIndices[i]);
       let nextQueryStartIndex: number = null;
@@ -261,7 +264,7 @@ export class ParsedQuery {
         nextQueryStartIndex = Number(queryStartIndices[i + 1]);
       }
       if (stringIndex >= currentQueryStartIndex 
-        && (nextQueryStartIndex === null || stringIndex < nextQueryStartIndex)) {
+        && ((nextQueryStartIndex === null && stringIndex < queries[queryStartIndices[i]].queryLocation.stopIndex) || stringIndex < nextQueryStartIndex)) {
         return i;
       }
     }
@@ -370,6 +373,27 @@ export class ParsedQuery {
           outputColumn.tableName = realTableName;
         }
       }
+    }
+  }
+
+  /**
+   * Set the common table expression names for any CTEs.
+   * Must be called after tokens have been added to the CTEs.
+   */
+  _setCommonTableExpressionNames(): void {
+    for (const cte of Object.values(this.commonTableExpressions)) {
+      let cteName: string = null;
+      for (const token of Object.values(cte.tokens)) {
+        if (token.value.toUpperCase() !== 'WITH') {
+          cteName = token.value;
+          break;
+        }
+      }
+      cte.commonTableExpressionName = cteName;
+      cte._setCommonTableExpressionNames();
+    }
+    for (const subquery of Object.values(this.subqueries)) {
+      subquery._setCommonTableExpressionNames();
     }
   }
 }
