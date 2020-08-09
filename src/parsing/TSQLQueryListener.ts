@@ -29,7 +29,7 @@ export class TSqlQueryListener implements TSqlParserListener {
     return value;
   }
 
-  enterDml_clause(ctx: any) {
+  _getClauseLocation(ctx: any): TokenLocation {
     let stopLine = ctx._start._line;
     let stopIndex = this.input.length;
     if (ctx._stop !== undefined) {
@@ -37,7 +37,17 @@ export class TSqlQueryListener implements TSqlParserListener {
       stopIndex = ctx._stop.stop;
     }
     const queryLocation: TokenLocation = new TokenLocation(ctx._start._line, stopLine, ctx._start.start, stopIndex);
+    return queryLocation;
+  }
+
+  enterDml_clause(ctx: any) {
+    const queryLocation: TokenLocation = this._getClauseLocation(ctx);
     this.parsedSql._addQuery(new ParsedQuery(QueryType.DML, queryLocation.getToken(this.input), queryLocation));
+  }
+
+  enterDdl_clause(ctx: any) {
+    const queryLocation: TokenLocation = this._getClauseLocation(ctx);
+    this.parsedSql._addQuery(new ParsedQuery(QueryType.DDL, queryLocation.getToken(this.input), queryLocation));
   }
 
   enterSubquery(ctx: any) {
@@ -52,6 +62,10 @@ export class TSqlQueryListener implements TSqlParserListener {
     let parsedQuery = this.parsedSql.getQueryAtLocation(cteLocation.startIndex);
     parsedQuery = parsedQuery.getSmallestQueryAtLocation(cteLocation.startIndex);
     parsedQuery._addCommonTableExpression(new ParsedQuery(QueryType.DML, cteLocation.getToken(this.input), cteLocation));
+  }
+
+  exitFull_table_name(ctx: any) {
+    this.exitTable_name(ctx);
   }
 
   exitTable_name(ctx: any) {

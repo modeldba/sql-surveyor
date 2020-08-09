@@ -2,7 +2,7 @@ import { SQLDialect } from "./models/SQLDialect";
 import { ParsedSql } from "./models/ParsedSql";
 import {CaseChangingStream} from './parsing/CaseChangingStream';
 import {TSqlQueryListener} from "./parsing/TSQLQueryListener";
-import {TSqlParser} from '../output/tsql/TSqlParser';
+import {TSqlParser, Tsql_fileContext} from '../output/tsql/TSqlParser';
 import {TSqlLexer} from '../output/tsql/TSqlLexer';
 import { ANTLRInputStream, CommonTokenStream, ConsoleErrorListener, Parser, BufferedTokenStream, CommonToken, Token } from 'antlr4ts';
 import { ParseTreeWalker } from "antlr4ts/tree/ParseTreeWalker";
@@ -86,7 +86,9 @@ export class SQLSurveyor {
     const preferredRuleOptions = [preferredRulesTable, preferredRulesColumn];
     const ignoreTokens = [
       TSqlParser.DOT,
-      TSqlParser.ID
+      TSqlParser.ID,
+      TSqlParser.LR_BRACKET,
+      TSqlParser.RR_BRACKET
     ]
     core.ignoredTokens = new Set(ignoreTokens);
     let indexToAutocomplete = sqlScript.length - 1;
