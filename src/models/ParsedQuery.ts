@@ -4,6 +4,7 @@ import { ReferencedColumn } from "./ReferencedColumn";
 import { ReferencedTable } from "./ReferencedTable";
 import { TokenLocation } from "./TokenLocation";
 import { Token } from "./Token";
+import { ParsingError } from "./ParsingError";
 
 export class ParsedQuery {
 
@@ -16,7 +17,7 @@ export class ParsedQuery {
   tokens: { [queryStartIndex: number]: Token };
   
   queryLocation: TokenLocation;
-  errorLocation: TokenLocation;
+  queryErrors: ParsingError[];
 
   commonTableExpressionName: string;
 
@@ -34,6 +35,7 @@ export class ParsedQuery {
     this.queryType = queryType;
     this.queryLocation = queryLocation;
 
+    this.queryErrors = [];
     this.subqueries = {};
     this.commonTableExpressions = {};
   }

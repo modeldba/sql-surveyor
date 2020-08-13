@@ -8,4 +8,8 @@ export class Token {
     this.value = value;
     this.location = location;
   }
+
+  setValue(input: string) {
+    this.value = this.location.getToken(input);
+  }
 }

@@ -12,6 +12,7 @@ import { CodeCompletionCore, SymbolTable } from "antlr4-c3";
 import { AutocompleteOption } from "./models/AutocompleteOption";
 import { AutocompleteOptionType } from "./models/AutocompleteOptionType";
 import { SimpleSQLLexer } from "./parsing/SimpleSQLLexer";
+import { TrackingErrorStrategy } from "./parsing/TrackingErrorStrategy";
 
 export class SQLSurveyor {
 
@@ -54,7 +55,16 @@ export class SQLSurveyor {
       }
     }
 
+    // Load the names of any Common Table Expressions
     Object.values(listener.parsedSql.parsedQueries).forEach(parsedQuery => parsedQuery._setCommonTableExpressionNames());
+
+    // Set any errors
+    for (const error of (parser.errorHandler as TrackingErrorStrategy).errors) {
+      error.token.setValue(sqlScript);
+      const parsedQuery = listener.parsedSql.getQueryAtLocation(error.token.location.startIndex);
+      parsedQuery.queryErrors.push(error);
+    }
+
     return listener.parsedSql;
   }
 
@@ -161,6 +171,7 @@ export class SQLSurveyor {
   _getParser(tokens: CommonTokenStream): Parser {
     const parser = new TSqlParser(tokens);
     parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
+    parser.errorHandler = new TrackingErrorStrategy();
     parser.interpreter.setPredictionMode(PredictionMode.LL);
     return parser;
   }

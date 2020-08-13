@@ -9,5 +9,7 @@ export * from './src/models/ReferencedTable';
 export * from './src/models/SQLDialect';
 export * from './src/models/Token';
 export * from './src/models/TokenLocation';
+export * from './src/models/ParsingError';
+export * from './src/models/ParsingErrorType';
 
 export * from './src/parsing/SimpleSQLLexer';
