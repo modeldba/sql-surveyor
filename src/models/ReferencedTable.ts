@@ -9,6 +9,8 @@ export class ReferencedTable {
 
   constructor(tableName: string) {
     this.tableName = tableName;
+    this.schemaName = null;
+    this.databaseName = null;
     this.aliases = new Set();
     this.locations = new Set();
   }

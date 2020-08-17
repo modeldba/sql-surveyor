@@ -13,6 +13,11 @@ import { AutocompleteOption } from "./models/AutocompleteOption";
 import { AutocompleteOptionType } from "./models/AutocompleteOptionType";
 import { SimpleSQLLexer } from "./parsing/SimpleSQLLexer";
 import { TrackingErrorStrategy } from "./parsing/TrackingErrorStrategy";
+import { PlSqlParser } from "../output/plsql/PlSqlParser";
+import { PlSqlLexer } from "../output/plsql/PlSqlLexer";
+import { ParseTree } from "antlr4ts/tree/ParseTree";
+import { PlSqlQueryListener } from "./parsing/PlSqlQueryListener";
+import { BaseSqlQueryListener } from "./parsing/BaseSqlQueryListener";
 
 export class SQLSurveyor {
 
@@ -28,8 +33,8 @@ export class SQLSurveyor {
   survey(sqlScript: string): ParsedSql {
     const tokens = this._getTokens(sqlScript);
     const parser = this._getParser(tokens);
-    const parsedTree = (parser as TSqlParser).tsql_file();
-    const listener = new TSqlQueryListener(sqlScript);
+    const parsedTree = this._getParseTree(parser);
+    const listener = this._getListener(sqlScript);
     
     // Populate the parsedSql object on the listener
     // @ts-ignore Weak Type Detection
@@ -40,18 +45,20 @@ export class SQLSurveyor {
     
     // Load the tokens
     for (const commonToken of tokens.getTokens() as any[]) {
-      const tokenLocation: TokenLocation = new TokenLocation(commonToken._line, commonToken._line, commonToken.start, commonToken.stop);
-      let parsedQuery = listener.parsedSql.getQueryAtLocation(commonToken.start);
-      const token = tokenLocation.getToken(sqlScript);
-      while (parsedQuery !== null) {
-        if (token.length > 0) {
-          parsedQuery._addToken(tokenLocation, token);
+      if (commonToken.channel !== Token.HIDDEN_CHANNEL) {
+        const tokenLocation: TokenLocation = new TokenLocation(commonToken._line, commonToken._line, commonToken.start, commonToken.stop);
+        let parsedQuery = listener.parsedSql.getQueryAtLocation(commonToken.start);
+        const token = tokenLocation.getToken(sqlScript);
+        while (parsedQuery !== null) {
+          if (token.length > 0) {
+            parsedQuery._addToken(tokenLocation, token);
+          }
+          let subParsedQuery = parsedQuery._getCommonTableExpressionAtLocation(commonToken.start);
+          if (subParsedQuery === null) {
+            subParsedQuery = parsedQuery._getSubqueryAtLocation(commonToken.start);
+          }
+          parsedQuery = subParsedQuery;
         }
-        let subParsedQuery = parsedQuery._getCommonTableExpressionAtLocation(commonToken.start);
-        if (subParsedQuery === null) {
-          subParsedQuery = parsedQuery._getSubqueryAtLocation(commonToken.start);
-        }
-        parsedQuery = subParsedQuery;
       }
     }
 
@@ -163,17 +170,45 @@ export class SQLSurveyor {
   _getTokens(sqlScript: string): CommonTokenStream {
     const chars = new ANTLRInputStream(sqlScript);
     const caseChangingCharStream = new CaseChangingStream(chars, true);
-    const lexer = new TSqlLexer(caseChangingCharStream);
+    let lexer = null;
+    if (this._dialect === SQLDialect.TSQL) {
+      lexer = new TSqlLexer(caseChangingCharStream);
+    } else if (this._dialect === SQLDialect.PLSQL) {
+      lexer = new PlSqlLexer(caseChangingCharStream);
+    }
     const tokens = new CommonTokenStream(lexer);
     return tokens;
   }
 
   _getParser(tokens: CommonTokenStream): Parser {
-    const parser = new TSqlParser(tokens);
+    let parser = null;
+    if (this._dialect === SQLDialect.TSQL) {
+      parser = new TSqlParser(tokens);
+    } else if (this._dialect === SQLDialect.PLSQL) {
+      parser  = new PlSqlParser(tokens);
+    }
     parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
     parser.errorHandler = new TrackingErrorStrategy();
     parser.interpreter.setPredictionMode(PredictionMode.LL);
     return parser;
+  }
+
+  _getParseTree(parser: Parser): ParseTree {
+    if (parser instanceof TSqlParser) {
+      return parser.tsql_file();
+    } else if (parser instanceof PlSqlParser) {
+      return (parser as PlSqlParser).sql_script();
+    }
+    return null;
+  }
+
+  _getListener(sqlScript: string): BaseSqlQueryListener {
+    if (this._dialect === SQLDialect.TSQL) {
+      return new TSqlQueryListener(sqlScript);
+    } else if (this._dialect === SQLDialect.PLSQL) {
+      return new PlSqlQueryListener(sqlScript);
+    }
+    return null;
   }
 
   _getTokenIndexAt(tokens: any[], fullString: string, offset: number): number {
