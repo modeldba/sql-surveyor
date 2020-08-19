@@ -17,7 +17,10 @@ import { PlSqlParser } from "../output/plsql/PlSqlParser";
 import { PlSqlLexer } from "../output/plsql/PlSqlLexer";
 import { ParseTree } from "antlr4ts/tree/ParseTree";
 import { PlSqlQueryListener } from "./parsing/PlSqlQueryListener";
+import { MySQLQueryListener } from "./parsing/MySQLQueryListener";
 import { BaseSqlQueryListener } from "./parsing/BaseSqlQueryListener";
+import { MultiQueryMySQLParser } from "../output/mysql/MultiQueryMySQLParser";
+import { MySQLLexer } from "../output/mysql/MySQLLexer";
 
 export class SQLSurveyor {
 
@@ -69,6 +72,10 @@ export class SQLSurveyor {
     for (const error of (parser.errorHandler as TrackingErrorStrategy).errors) {
       error.token.setValue(sqlScript);
       const parsedQuery = listener.parsedSql.getQueryAtLocation(error.token.location.startIndex);
+      if (parsedQuery === null) {
+        // Nothing to add the error to
+        continue;
+      }
       parsedQuery.queryErrors.push(error);
     }
 
@@ -175,6 +182,8 @@ export class SQLSurveyor {
       lexer = new TSqlLexer(caseChangingCharStream);
     } else if (this._dialect === SQLDialect.PLSQL) {
       lexer = new PlSqlLexer(caseChangingCharStream);
+    } else if (this._dialect === SQLDialect.MYSQL) {
+      lexer = new MySQLLexer(chars);
     }
     const tokens = new CommonTokenStream(lexer);
     return tokens;
@@ -185,7 +194,9 @@ export class SQLSurveyor {
     if (this._dialect === SQLDialect.TSQL) {
       parser = new TSqlParser(tokens);
     } else if (this._dialect === SQLDialect.PLSQL) {
-      parser  = new PlSqlParser(tokens);
+      parser = new PlSqlParser(tokens);
+    } else if (this._dialect === SQLDialect.MYSQL) {
+      parser = new MultiQueryMySQLParser(tokens);
     }
     parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
     parser.errorHandler = new TrackingErrorStrategy();
@@ -198,6 +209,8 @@ export class SQLSurveyor {
       return parser.tsql_file();
     } else if (parser instanceof PlSqlParser) {
       return (parser as PlSqlParser).sql_script();
+    } else if (this._dialect === SQLDialect.MYSQL) {
+      return (parser as MultiQueryMySQLParser).sql_script();
     }
     return null;
   }
@@ -207,6 +220,8 @@ export class SQLSurveyor {
       return new TSqlQueryListener(sqlScript);
     } else if (this._dialect === SQLDialect.PLSQL) {
       return new PlSqlQueryListener(sqlScript);
+    } else if (this._dialect === SQLDialect.MYSQL) {
+      return new MySQLQueryListener(sqlScript);
     }
     return null;
   }
@@ -252,3 +267,18 @@ export class SQLSurveyor {
   }
 
 }
+
+const input = 'SELECT * FROM tab1; SELECT * FROM tab2';
+// const input = 'SELECT t1.val FROM tableName as t1 where t1.col1 = 1 and (select 1 from tableName2) > 0';
+// const input = 'SELECT * from [database].[dbo].[tableName] t1 \r\n JOIN tableName2 \r\n ON t1.val = otherVal;';  
+// const input = 'SELECT * from "dbo"."tableName" t1 \r\n JOIN tableName2 \r\n ON t1.val = otherVal;';  
+// const input = 'SELECT t.column1, t.* FROM table1 t WHERE t.col in (select col from table2 where col3 = col4)';
+// const input = 'with my_depts as (select dept_num from departments where department_name = \'test\') select * from my_depts;';
+// const input = 'with my_depts as (select dept_num from departments where department_name = \'test\'), my_emps as (select emp_num from employees) select * from my_depts;';
+// const input = 'with my_depts as (select dept_num from departments where department_name = \'test\'), my_emps as (select emp_num from employees) select * from my_depts where dept_num in (select * from departmentemployees);';
+// const input = 'UPDATE departments SET department_name = \'lol\' WHERE dept_num = 1';
+// const input = 'SELECT * FROM tab WHERE col1 =';
+// const input = 'SELECT * FROM; SELECT * FROM tab2';
+const surveyor = new SQLSurveyor(SQLDialect.MYSQL);
+const parsedSql = surveyor.survey(input);
+console.dir(parsedSql, { depth: null });
