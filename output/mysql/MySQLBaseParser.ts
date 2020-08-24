@@ -8,7 +8,7 @@ export abstract class MySQLBaseParser extends Parser {
 
   public constructor(input: TokenStream) {
     super(input)
-    this.serverVersion = 50707
+    this.serverVersion = 80021;
   }
 
   public reset(): void {

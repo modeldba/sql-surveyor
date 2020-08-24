@@ -58,7 +58,7 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
     const cteLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     let parsedQuery = this.parsedSql.getQueryAtLocation(cteLocation.startIndex);
     parsedQuery = parsedQuery.getSmallestQueryAtLocation(cteLocation.startIndex);
-    parsedQuery._addCommonTableExpression(new ParsedQuery(QueryType.DML, cteLocation.getToken(this.input), cteLocation));  
+    parsedQuery._addCommonTableExpression(new ParsedQuery(QueryType.DML, cteLocation.getToken(this.input), cteLocation));
   }
 
   exitTable_alias(ctx: any) {
