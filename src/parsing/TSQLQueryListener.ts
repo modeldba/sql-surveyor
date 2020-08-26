@@ -4,6 +4,7 @@ import { ParsedQuery } from '../models/ParsedQuery';
 import { QueryType } from '../models/QueryType';
 import { BaseSqlQueryListener } from './BaseSqlQueryListener';
 import { ReferencedTable } from '../models/ReferencedTable';
+import { ExpressionContext } from '../../output/tsql/TSqlParser';
 
 export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParserListener {
 
@@ -40,13 +41,31 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
     return referencedTable;
   }
 
+  _getClauseLocationWithoutTrailingSemicolon(queryLocation: TokenLocation): TokenLocation {
+    const whitespaceRegex = /[\s]/;
+    let newStopIndex = queryLocation.stopIndex;
+    while (this.input[newStopIndex] !== undefined 
+            && (whitespaceRegex.test(this.input[newStopIndex])
+                || this.input[newStopIndex] === ';')) {
+      newStopIndex--;
+    }
+    if (newStopIndex !== queryLocation.stopIndex) {
+      queryLocation.stopIndex = newStopIndex;
+    }
+    return queryLocation;
+  }
+
   enterDml_clause(ctx: any) {
-    const queryLocation: TokenLocation = this._getClauseLocation(ctx);
+    let queryLocation: TokenLocation = this._getClauseLocation(ctx);
+    // Remove trailing ; and whitespace if it exists to match other SQL dialects
+    queryLocation = this._getClauseLocationWithoutTrailingSemicolon(queryLocation);
     this.parsedSql._addQuery(new ParsedQuery(QueryType.DML, queryLocation.getToken(this.input), queryLocation));
   }
 
   enterDdl_clause(ctx: any) {
-    const queryLocation: TokenLocation = this._getClauseLocation(ctx);
+    let queryLocation: TokenLocation = this._getClauseLocation(ctx);
+    // Remove trailing ; and whitespace if it exists to match other SQL dialects
+    queryLocation = this._getClauseLocationWithoutTrailingSemicolon(queryLocation);
     this.parsedSql._addQuery(new ParsedQuery(QueryType.DDL, queryLocation.getToken(this.input), queryLocation));
   }
 
@@ -120,6 +139,14 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
 
   exitAsterisk(ctx) {
     this.exitColumn_elem(ctx);
+  }
+
+  exitExpression_elem(ctx) {
+    if (ctx.children[0] instanceof ExpressionContext) {
+      return this.exitColumn_elem(ctx.children[0]);
+    } else if (ctx.children.length > 1) {
+      return this.exitColumn_elem(ctx.children[ctx.children.length - 1]);
+    }
   }
 
 } 

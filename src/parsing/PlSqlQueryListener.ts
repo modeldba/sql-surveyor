@@ -4,7 +4,7 @@ import { QueryType } from '../models/QueryType';
 import { PlSqlParserListener } from '../../output/plsql/PlSqlParserListener';
 import { BaseSqlQueryListener } from './BaseSqlQueryListener';
 import { ReferencedTable } from '../models/ReferencedTable';
-import { Select_list_elementsContext, Factoring_elementContext, Subquery_factoring_clauseContext } from '../../output/plsql/PlSqlParser';
+import { Select_list_elementsContext, Factoring_elementContext, Subquery_factoring_clauseContext, Tableview_nameContext } from '../../output/plsql/PlSqlParser';
 
 export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlParserListener {
 
@@ -70,15 +70,13 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
   }
 
   exitTableview_name(ctx: any) {
-    this.exitGeneral_table_ref(ctx);
-  }
-
-  exitGeneral_table_ref(ctx: any) {
-    const tableLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
-    const referencedTable = this.parseContextToReferencedTable(ctx);
-    let parsedQuery = this.parsedSql.getQueryAtLocation(tableLocation.startIndex);
-    parsedQuery = parsedQuery.getSmallestQueryAtLocation(tableLocation.startIndex);
-    parsedQuery._addTableNameLocation(referencedTable.tableName, tableLocation, referencedTable.schemaName, referencedTable.databaseName);
+    if (!(ctx._parent instanceof Select_list_elementsContext)) { // We already detect this context separately
+      const tableLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+      const referencedTable = this.parseContextToReferencedTable(ctx);
+      let parsedQuery = this.parsedSql.getQueryAtLocation(tableLocation.startIndex);
+      parsedQuery = parsedQuery.getSmallestQueryAtLocation(tableLocation.startIndex);
+      parsedQuery._addTableNameLocation(referencedTable.tableName, tableLocation, referencedTable.schemaName, referencedTable.databaseName);
+    }
   }
 
   exitColumn_name(ctx: any) {
@@ -92,7 +90,10 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
       const columnTextSplit: string[] = columnText.split('.');
       columnName = this.unquote(columnTextSplit[columnTextSplit.length - 1]);
       tableNameOrAlias = this.unquote(columnTextSplit[columnTextSplit.length - 2]);
-      parsedQuery._addTableNameLocation(tableNameOrAlias, columnLocation, null, null);
+      let tableNameOrAliasStartIndex = columnLocation.stopIndex - columnTextSplit[columnTextSplit.length - 1].length - columnTextSplit[columnTextSplit.length - 2].length;
+      let tableNameOrAliasStopIndex = tableNameOrAliasStartIndex + columnTextSplit[columnTextSplit.length - 2].length - 1;
+      const tableNameOrAliasLocation = new TokenLocation(columnLocation.lineStart, columnLocation.lineEnd, tableNameOrAliasStartIndex, tableNameOrAliasStopIndex);
+      parsedQuery._addTableNameLocation(tableNameOrAlias, tableNameOrAliasLocation, null, null);
     } else {
       columnName = this.unquote(columnName);
     }
@@ -122,6 +123,10 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
       const columnTextSplit: string[] = columnText.split('.');
       columnName = this.unquote(columnTextSplit[columnTextSplit.length - 1]);
       tableNameOrAlias = this.unquote(columnTextSplit[columnTextSplit.length - 2]);
+      let tableNameOrAliasStartIndex = columnLocation.stopIndex - columnTextSplit[columnTextSplit.length - 1].length - columnTextSplit[columnTextSplit.length - 2].length;
+      let tableNameOrAliasStopIndex = tableNameOrAliasStartIndex + columnTextSplit[columnTextSplit.length - 2].length - 1;
+      const tableNameOrAliasLocation = new TokenLocation(columnLocation.lineStart, columnLocation.lineEnd, tableNameOrAliasStartIndex, tableNameOrAliasStopIndex);
+      parsedQuery._addTableNameLocation(tableNameOrAlias, tableNameOrAliasLocation, null, null);
     } else {
       columnName = this.unquote(columnName);
     }
