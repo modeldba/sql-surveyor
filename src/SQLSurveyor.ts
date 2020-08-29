@@ -91,35 +91,16 @@ export class SQLSurveyor {
     const tokens = this._getTokens(sqlScript);
     const parser = this._getParser(tokens);
     const core = new CodeCompletionCore(parser);
-    const preferredRulesTable = [
-      TSqlParser.RULE_table_name,
-      TSqlParser.RULE_table_name_with_hint,
-      TSqlParser.RULE_full_table_name,
-      TSqlParser.RULE_table_source
-    ];
-    const preferredRulesColumn = [
-      TSqlParser.RULE_column_elem,
-      TSqlParser.RULE_column_alias,
-      TSqlParser.RULE_full_column_name,
-      TSqlParser.RULE_full_column_name_list,
-      TSqlParser.RULE_column_name_list,
-      TSqlParser.RULE_column_name_list_with_order,
-      TSqlParser.RULE_output_column_name,
-      TSqlParser.RULE_column_declaration
-    ];
+    const preferredRulesTable = this._getPreferredRulesForTable();
+    const preferredRulesColumn = this._getPreferredRulesForColumn();
     const preferredRuleOptions = [preferredRulesTable, preferredRulesColumn];
-    const ignoreTokens = [
-      TSqlParser.DOT,
-      TSqlParser.ID,
-      TSqlParser.LR_BRACKET,
-      TSqlParser.RR_BRACKET
-    ]
+    const ignoreTokens = this._getTokensToIgnore();
     core.ignoredTokens = new Set(ignoreTokens);
     let indexToAutocomplete = sqlScript.length - 1;
     if (atIndex !== null && atIndex !== undefined) {
       indexToAutocomplete = atIndex;
     }
-    const simpleSQLLexer = new SimpleSQLLexer(sqlScript);
+    const simpleSQLLexer = new SimpleSQLLexer(sqlScript, this._tokenizeWhitespace());
     const allTokens = new CommonTokenStream(simpleSQLLexer);
     const tokenIndex = this._getTokenIndexAt(allTokens.getTokens(), sqlScript, indexToAutocomplete);
     if (tokenIndex === null) {
@@ -264,6 +245,93 @@ export class SQLSurveyor {
       return tokenLocation.getToken(fullString);
     }
     return '';
+  }
+
+  _tokenizeWhitespace() {
+    if (this._dialect === SQLDialect.TSQL) {
+      return false; // TSQL grammar SKIPs whitespace
+    } else if (this._dialect === SQLDialect.PLSQL) {
+      return true;
+    } else if (this._dialect === SQLDialect.MYSQL) {
+      return true;
+    }
+    return true;
+  }
+
+  _getPreferredRulesForTable(): number[] {
+    if (this._dialect === SQLDialect.TSQL) {
+      return [
+        TSqlParser.RULE_table_name,
+        TSqlParser.RULE_table_name_with_hint,
+        TSqlParser.RULE_full_table_name,
+        TSqlParser.RULE_table_source
+      ];
+    } else if (this._dialect === SQLDialect.MYSQL) {
+      return [
+        MultiQueryMySQLParser.RULE_tableRef,
+        MultiQueryMySQLParser.RULE_fieldIdentifier
+      ]
+    } else if (this._dialect === SQLDialect.PLSQL) {
+      return [
+        PlSqlParser.RULE_tableview_name,
+        PlSqlParser.RULE_table_element
+      ]
+    }
+    return [];
+  }
+
+  _getPreferredRulesForColumn(): number[] {
+    if (this._dialect === SQLDialect.TSQL) {
+      return [
+        TSqlParser.RULE_column_elem,
+        TSqlParser.RULE_column_alias,
+        TSqlParser.RULE_full_column_name,
+        TSqlParser.RULE_full_column_name_list,
+        TSqlParser.RULE_column_name_list,
+        TSqlParser.RULE_column_name_list_with_order,
+        TSqlParser.RULE_output_column_name,
+        TSqlParser.RULE_column_declaration
+      ];
+    } else if (this._dialect === SQLDialect.MYSQL) {
+      return [
+        MultiQueryMySQLParser.RULE_columnRef
+      ];
+    } else if (this._dialect === SQLDialect.PLSQL) {
+      return [
+        PlSqlParser.RULE_column_name,
+        PlSqlParser.RULE_general_element
+      ];
+    }
+    return [];
+  }
+
+  _getTokensToIgnore(): number[] {
+    if (this._dialect === SQLDialect.TSQL) {
+      return [
+        TSqlParser.DOT,
+        TSqlParser.ID,
+        TSqlParser.LR_BRACKET,
+        TSqlParser.RR_BRACKET
+      ];
+    } else if (this._dialect === SQLDialect.MYSQL) {
+      return [
+        MultiQueryMySQLParser.DOT_SYMBOL,
+        MultiQueryMySQLParser.IDENTIFIER,
+        MultiQueryMySQLParser.OPEN_PAR_SYMBOL,
+        MultiQueryMySQLParser.CLOSE_PAR_SYMBOL,
+        MultiQueryMySQLParser.OPEN_CURLY_SYMBOL,
+        MultiQueryMySQLParser.CLOSE_CURLY_SYMBOL
+      ];
+    } else if (this._dialect === SQLDialect.PLSQL) {
+      return [
+        PlSqlParser.PERIOD,
+        PlSqlParser.DOUBLE_PERIOD,
+        PlSqlParser.IDENTIFIER,
+        PlSqlParser.LEFT_PAREN,
+        PlSqlParser.RIGHT_PAREN
+      ];
+    }
+    return [];
   }
 
 }

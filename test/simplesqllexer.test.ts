@@ -3,7 +3,7 @@ import { Token } from 'antlr4ts';
 
 test('SimpleSQLLexer correctly parses SQL queries', () => {
   let sqlString = 'SELECT * FROM table';
-  let lexer = new SimpleSQLLexer(sqlString);
+  let lexer = new SimpleSQLLexer(sqlString, false);
   expect(lexer.nextToken().text).toBe('SELECT');
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
@@ -11,7 +11,7 @@ test('SimpleSQLLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().type).toBe(Token.EOF);
 
   sqlString = '  SELECT \t* \r\n FROM  table   ';
-  lexer = new SimpleSQLLexer(sqlString);
+  lexer = new SimpleSQLLexer(sqlString, false);
   expect(lexer.nextToken().text).toBe('SELECT');
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
@@ -19,7 +19,7 @@ test('SimpleSQLLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().type).toBe(Token.EOF);
 
   sqlString = "SELECT * FROM table WHERE column = 'test'";
-  lexer = new SimpleSQLLexer(sqlString);
+  lexer = new SimpleSQLLexer(sqlString, false);
   expect(lexer.nextToken().text).toBe('SELECT');
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
@@ -31,7 +31,7 @@ test('SimpleSQLLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().type).toBe(Token.EOF);
 
   sqlString = "SELECT * FROM table WHERE column = 'test and a missing quote";
-  lexer = new SimpleSQLLexer(sqlString);
+  lexer = new SimpleSQLLexer(sqlString, false);
   expect(lexer.nextToken().text).toBe('SELECT');
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
@@ -43,7 +43,7 @@ test('SimpleSQLLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().type !== Token.EOF);
 
   sqlString = "SELECT * FROM table WHERE column = 'test and a \r\n newline'   ";
-  lexer = new SimpleSQLLexer(sqlString);
+  lexer = new SimpleSQLLexer(sqlString, false);
   expect(lexer.nextToken().text).toBe('SELECT');
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
@@ -55,7 +55,7 @@ test('SimpleSQLLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().type).toBe(Token.EOF);
 
   sqlString = "SELECT * FROM table; SELECT * FROM table2 ;SELECT * FROM table3;SELECT * FROM table4 ; ";
-  lexer = new SimpleSQLLexer(sqlString);
+  lexer = new SimpleSQLLexer(sqlString, false);
   expect(lexer.nextToken().text).toBe('SELECT');
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
@@ -79,7 +79,7 @@ test('SimpleSQLLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().type).toBe(Token.EOF);
 
   sqlString = "SELECT * FROM table1 t1 where t1.column1 = 0;";
-  lexer = new SimpleSQLLexer(sqlString);
+  lexer = new SimpleSQLLexer(sqlString, false);
   expect(lexer.nextToken().text).toBe('SELECT');
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
@@ -95,7 +95,7 @@ test('SimpleSQLLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().type).toBe(Token.EOF);
 
   sqlString = "SELECT * FROM table1 t1 where (t1.column1 = 0);";
-  lexer = new SimpleSQLLexer(sqlString);
+  lexer = new SimpleSQLLexer(sqlString, false);
   expect(lexer.nextToken().text).toBe('SELECT');
   expect(lexer.nextToken().text).toBe('*');
   expect(lexer.nextToken().text).toBe('FROM');
@@ -112,4 +112,27 @@ test('SimpleSQLLexer correctly parses SQL queries', () => {
   expect(lexer.nextToken().text).toBe(';');
   expect(lexer.nextToken().type).toBe(Token.EOF);
 
+});
+
+test('SimpleSQLLexer can parse whitespace', () => {
+  let sqlString = '  SELECT \t* \r\n FROM  table   ';
+  let lexer = new SimpleSQLLexer(sqlString, true);
+  expect(lexer.nextToken().text).toBe(' ');
+  expect(lexer.nextToken().text).toBe(' ');
+  expect(lexer.nextToken().text).toBe('SELECT');
+  expect(lexer.nextToken().text).toBe(' ');
+  expect(lexer.nextToken().text).toBe('\t');
+  expect(lexer.nextToken().text).toBe('*');
+  expect(lexer.nextToken().text).toBe(' ');
+  expect(lexer.nextToken().text).toBe('\r');
+  expect(lexer.nextToken().text).toBe('\n');
+  expect(lexer.nextToken().text).toBe(' ');
+  expect(lexer.nextToken().text).toBe('FROM');
+  expect(lexer.nextToken().text).toBe(' ');
+  expect(lexer.nextToken().text).toBe(' ');
+  expect(lexer.nextToken().text).toBe('table');
+  expect(lexer.nextToken().text).toBe(' ');
+  expect(lexer.nextToken().text).toBe(' ');
+  expect(lexer.nextToken().text).toBe(' ');
+  expect(lexer.nextToken().type).toBe(Token.EOF);
 });

@@ -17,11 +17,15 @@ export class SimpleSQLLexer implements TokenSource {
   insideQuote: boolean;
 
   specialCharacters: string[] = [';', '.', '(', ')'];
+  whitespaceCharacters: string[] = [' ', '\f', '\n', '\r', '\t', '\v', '\u00A0', '\u2028', '\u2029'];
 
-  constructor(value: string) {
+  constructor(value: string, tokenizeWhitespace: boolean) {
     this.value = value;
     this.currentIndex = 0;
     this.insideQuote = false;
+    if (tokenizeWhitespace) {
+      this.specialCharacters.push(...this.whitespaceCharacters);
+    }
   }
 
   nextToken(): Token {
