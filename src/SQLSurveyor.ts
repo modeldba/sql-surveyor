@@ -86,7 +86,7 @@ export class SQLSurveyor {
     if (atIndex !== undefined && atIndex !== null) {
       // Remove everything after the index we want to get suggestions for,
       // it's not needed and keeping it in may impact which token gets selected for prediction
-      sqlScript = sqlScript.substring(0, atIndex + 1);
+      sqlScript = sqlScript.substring(0, atIndex);
     }
     const tokens = this._getTokens(sqlScript);
     const parser = this._getParser(tokens);
@@ -309,6 +309,7 @@ export class SQLSurveyor {
     if (this._dialect === SQLDialect.TSQL) {
       return [
         TSqlParser.DOT,
+        TSqlParser.COMMA,
         TSqlParser.ID,
         TSqlParser.LR_BRACKET,
         TSqlParser.RR_BRACKET
@@ -316,6 +317,8 @@ export class SQLSurveyor {
     } else if (this._dialect === SQLDialect.MYSQL) {
       return [
         MultiQueryMySQLParser.DOT_SYMBOL,
+        MultiQueryMySQLParser.COMMA_SYMBOL,
+        MultiQueryMySQLParser.SEMICOLON_SYMBOL,
         MultiQueryMySQLParser.IDENTIFIER,
         MultiQueryMySQLParser.OPEN_PAR_SYMBOL,
         MultiQueryMySQLParser.CLOSE_PAR_SYMBOL,
@@ -325,6 +328,8 @@ export class SQLSurveyor {
     } else if (this._dialect === SQLDialect.PLSQL) {
       return [
         PlSqlParser.PERIOD,
+        PlSqlParser.COMMA,
+        PlSqlParser.SEMICOLON,
         PlSqlParser.DOUBLE_PERIOD,
         PlSqlParser.IDENTIFIER,
         PlSqlParser.LEFT_PAREN,
