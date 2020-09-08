@@ -8,6 +8,7 @@
     "antlr4ts-all": "npm run antlr4ts-mysql && npm run antlr4ts-plsql && npm run antlr4ts-tsql",
     "antlr4ts-mysql": "antlr4ts -Xexact-output-dir -o output/mysql -package parsers grammars/mysql/MySQLLexer.g4 grammars/mysql/MultiQueryMySQLParser.g4",
     "antlr4ts-plsql": "antlr4ts -Xexact-output-dir -o output/plsql -package parsers grammars/plsql/PlSqlLexer.g4 grammars/plsql/PlSqlParser.g4",
+    "antlr4ts-plpgsql": "antlr4ts -Xexact-output-dir -o output/plpgsql -package parsers grammars/plpgsql/PLpgSQLLexer.g4 grammars/plpgsql/PLpgSQLParser.g4",
     "antlr4ts-tsql": "antlr4ts -Xexact-output-dir -o output/tsql -package parsers grammars/tsql/TSqlLexer.g4 grammars/tsql/TSqlParser.g4",
     "build": "tsc --build --clean && tsc",
     "parsetest": "npx ts-node parse.ts",

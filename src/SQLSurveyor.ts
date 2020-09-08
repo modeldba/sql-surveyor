@@ -21,6 +21,8 @@ import { MySQLQueryListener } from "./parsing/MySQLQueryListener";
 import { BaseSqlQueryListener } from "./parsing/BaseSqlQueryListener";
 import { MultiQueryMySQLParser } from "../output/mysql/MultiQueryMySQLParser";
 import { MySQLLexer } from "../output/mysql/MySQLLexer";
+import { PLpgSQLLexer } from "../output/plpgsql/PLpgSQLLexer";
+import { PLpgSQLParser } from "../output/plpgsql/PLpgSQLParser";
 
 export class SQLSurveyor {
 
@@ -163,6 +165,8 @@ export class SQLSurveyor {
       lexer = new TSqlLexer(caseChangingCharStream);
     } else if (this._dialect === SQLDialect.PLSQL) {
       lexer = new PlSqlLexer(caseChangingCharStream);
+    } else if (this._dialect === SQLDialect.PLpgSQL) {
+      lexer = new PLpgSQLLexer(chars);
     } else if (this._dialect === SQLDialect.MYSQL) {
       lexer = new MySQLLexer(chars);
     }
@@ -176,6 +180,8 @@ export class SQLSurveyor {
       parser = new TSqlParser(tokens);
     } else if (this._dialect === SQLDialect.PLSQL) {
       parser = new PlSqlParser(tokens);
+    } else if (this._dialect === SQLDialect.PLpgSQL) {
+      parser = new PLpgSQLParser(tokens);
     } else if (this._dialect === SQLDialect.MYSQL) {
       parser = new MultiQueryMySQLParser(tokens);
     }
@@ -190,6 +196,8 @@ export class SQLSurveyor {
       return parser.tsql_file();
     } else if (parser instanceof PlSqlParser) {
       return (parser as PlSqlParser).sql_script();
+    } else if (parser instanceof PLpgSQLParser) {
+      return (parser as PLpgSQLParser).sql();
     } else if (this._dialect === SQLDialect.MYSQL) {
       return (parser as MultiQueryMySQLParser).sql_script();
     }
@@ -251,6 +259,8 @@ export class SQLSurveyor {
     if (this._dialect === SQLDialect.TSQL) {
       return false; // TSQL grammar SKIPs whitespace
     } else if (this._dialect === SQLDialect.PLSQL) {
+      return true;
+    } else if (this._dialect === SQLDialect.PLpgSQL) {
       return true;
     } else if (this._dialect === SQLDialect.MYSQL) {
       return true;
@@ -340,3 +350,7 @@ export class SQLSurveyor {
   }
 
 }
+
+const sql = 'SET SCHEMA "integrationtest_schema";';
+const surveyor = new SQLSurveyor(SQLDialect.PLpgSQL);
+const parsedSql = surveyor.survey(sql);

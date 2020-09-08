@@ -12,6 +12,8 @@ MySQL Grammar: https://github.com/mysql/mysql-workbench/tree/8.0/library/parsers
 
 TSQL and PlSQL: https://github.com/antlr/grammars-v4/tree/master/sql
 
+PL/pgSQL: https://github.com/pgcodekeeper/pgcodekeeper/tree/master/apgdiff/antlr-src
+
 We generate directly from the grammars supplied by those sources and make no modifications to them (this makes it easier to stay up to date). Some grammars use in-line code or base classes that must be added in after generating the parsers and lexers. Instructions for individual grammars are below.
 
 ### Generating Grammars

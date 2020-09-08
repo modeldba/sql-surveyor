@@ -1,5 +1,6 @@
 export enum SQLDialect {
   MYSQL = "MySQL",
   TSQL = "TSQL",
-  PLSQL = "PLSQL"
+  PLSQL = "PLSQL",
+  PLpgSQL = "PLpgSQL"
 }
