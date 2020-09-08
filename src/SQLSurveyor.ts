@@ -23,6 +23,7 @@ import { MultiQueryMySQLParser } from "../output/mysql/MultiQueryMySQLParser";
 import { MySQLLexer } from "../output/mysql/MySQLLexer";
 import { PLpgSQLLexer } from "../output/plpgsql/PLpgSQLLexer";
 import { PLpgSQLParser } from "../output/plpgsql/PLpgSQLParser";
+import { PLpgSQLQueryListener } from "./parsing/PLpgSQLQueryListener";
 
 export class SQLSurveyor {
 
@@ -209,6 +210,8 @@ export class SQLSurveyor {
       return new TSqlQueryListener(sqlScript);
     } else if (this._dialect === SQLDialect.PLSQL) {
       return new PlSqlQueryListener(sqlScript);
+    } else if (this._dialect === SQLDialect.PLpgSQL) {
+      return new PLpgSQLQueryListener(sqlScript);
     } else if (this._dialect === SQLDialect.MYSQL) {
       return new MySQLQueryListener(sqlScript);
     }
@@ -351,6 +354,8 @@ export class SQLSurveyor {
 
 }
 
-const sql = 'SET SCHEMA "integrationtest_schema";';
-const surveyor = new SQLSurveyor(SQLDialect.PLpgSQL);
+// const input = 'SET SCHEMA "integrationtest_schema";';
+const sql = 'with my_depts as (select dept_num from departments where department_name = \'test\') select * from my_depts  ;';
+const surveyor = new SQLSurveyor(SQLDialect.PLSQL);
 const parsedSql = surveyor.survey(sql);
+// console.dir(parsedSql, { depth: null });
