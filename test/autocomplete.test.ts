@@ -3,10 +3,12 @@ import { assert } from 'console';
 
 let mysqlSurveyor: SQLSurveyor = null;
 let plsqlSurveyor: SQLSurveyor = null;
+let plpgsqlSurveyor: SQLSurveyor = null;
 let tsqlSurveyor: SQLSurveyor = null;
 beforeAll(() => {
   mysqlSurveyor = new SQLSurveyor(SQLDialect.MYSQL);
   plsqlSurveyor = new SQLSurveyor(SQLDialect.PLSQL);
+  plpgsqlSurveyor = new SQLSurveyor(SQLDialect.PLpgSQL);
   tsqlSurveyor = new SQLSurveyor(SQLDialect.TSQL);
 });
 
@@ -43,6 +45,10 @@ test('autocomplete detects table location', () => {
   expect(containsOptionType(plsqlOptions, AutocompleteOptionType.TABLE)).toBeTruthy();
   expect(containsOptionType(plsqlOptions, AutocompleteOptionType.COLUMN)).toBeFalsy();
   expect(allKeywordsBeginWith(plsqlOptions, 't')).toBeTruthy();
+  const plpgsqlOptions = plpgsqlSurveyor.autocomplete(sql, sql.length);
+  expect(containsOptionType(plpgsqlOptions, AutocompleteOptionType.TABLE)).toBeTruthy();
+  expect(containsOptionType(plpgsqlOptions, AutocompleteOptionType.COLUMN)).toBeFalsy();
+  expect(allKeywordsBeginWith(plpgsqlOptions, 't')).toBeTruthy();
 });
 
 test('autocomplete detects column location', () => {
@@ -59,4 +65,9 @@ test('autocomplete detects column location', () => {
   expect(containsOptionType(plsqlOptions, AutocompleteOptionType.TABLE)).toBeTruthy();
   expect(containsOptionType(plsqlOptions, AutocompleteOptionType.COLUMN)).toBeTruthy();
   expect(allKeywordsBeginWith(plsqlOptions, 'c')).toBeTruthy();
+  const plpgsqlOptions = plpgsqlSurveyor.autocomplete(sql, sql.length);
+  expect(containsOptionType(plpgsqlOptions, AutocompleteOptionType.TABLE)).toBeTruthy();
+  expect(containsOptionType(plpgsqlOptions, AutocompleteOptionType.COLUMN)).toBeTruthy();
+  expect(allKeywordsBeginWith(plpgsqlOptions, 'c')).toBeTruthy();
+
 });

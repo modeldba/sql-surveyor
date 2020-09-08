@@ -116,6 +116,8 @@ export class SQLSurveyor {
     // Depending on the SQL grammar, we may not get both Tables and Column rules,
     // even if both are viable options for autocompletion
     // So, instead of using all preferredRules at once, we'll do them separate
+    let isTableCandidatePosition = false;
+    let isColumnCandidatePosition = false;
     for (const preferredRules of preferredRuleOptions) {
       core.preferredRules = new Set(preferredRules);
       const candidates = core.collectCandidates(tokenIndex);
@@ -139,21 +141,20 @@ export class SQLSurveyor {
           autocompleteOptions.push(new AutocompleteOption(candidateTokenValue, AutocompleteOptionType.KEYWORD));
         }
       }
-      let isTableCandidatePosition = false;
-      let isColumnCandidatePosition = false;
       for (const rule of candidates.rules) {
         if (preferredRulesTable.includes(rule[0])) {
           isTableCandidatePosition = true;
-        } else if (preferredRulesColumn.includes(rule[0])) {
+        }
+        if (preferredRulesColumn.includes(rule[0])) {
           isColumnCandidatePosition = true;
         }
       }
-      if (isTableCandidatePosition) {
-        autocompleteOptions.unshift(new AutocompleteOption(null, AutocompleteOptionType.TABLE));
-      }
-      if (isColumnCandidatePosition) {
-        autocompleteOptions.unshift(new AutocompleteOption(null, AutocompleteOptionType.COLUMN));
-      }
+    } 
+    if (isTableCandidatePosition) {
+      autocompleteOptions.unshift(new AutocompleteOption(null, AutocompleteOptionType.TABLE));
+    }
+    if (isColumnCandidatePosition) {
+      autocompleteOptions.unshift(new AutocompleteOption(null, AutocompleteOptionType.COLUMN));
     }
     return autocompleteOptions;
   }
@@ -289,6 +290,11 @@ export class SQLSurveyor {
         PlSqlParser.RULE_tableview_name,
         PlSqlParser.RULE_table_element
       ]
+    } else if (this._dialect === SQLDialect.PLpgSQL) {
+      return [
+        PLpgSQLParser.RULE_schema_qualified_name,
+        PLpgSQLParser.RULE_indirection_var
+      ];
     }
     return [];
   }
@@ -313,6 +319,11 @@ export class SQLSurveyor {
       return [
         PlSqlParser.RULE_column_name,
         PlSqlParser.RULE_general_element
+      ];
+    } else if (this._dialect === SQLDialect.PLpgSQL) {
+      return [
+        PLpgSQLParser.RULE_indirection_var,
+        PLpgSQLParser.RULE_indirection_identifier
       ];
     }
     return [];
@@ -348,14 +359,20 @@ export class SQLSurveyor {
         PlSqlParser.LEFT_PAREN,
         PlSqlParser.RIGHT_PAREN
       ];
+    } else if (this._dialect === SQLDialect.PLpgSQL) {
+      return [
+        PLpgSQLParser.DOT,
+        PLpgSQLParser.COMMA,
+        PLpgSQLParser.SEMI_COLON,
+        PLpgSQLParser.DOUBLE_DOT,
+        PLpgSQLParser.Identifier,
+        PLpgSQLParser.LEFT_PAREN,
+        PLpgSQLParser.RIGHT_PAREN,
+        PLpgSQLParser.LEFT_BRACKET,
+        PLpgSQLParser.RIGHT_BRACKET
+      ];
     }
     return [];
   }
 
 }
-
-// const input = 'SET SCHEMA "integrationtest_schema";';
-const sql = 'with my_depts as (select dept_num from departments where department_name = \'test\') select * from my_depts  ;';
-const surveyor = new SQLSurveyor(SQLDialect.PLSQL);
-const parsedSql = surveyor.survey(sql);
-// console.dir(parsedSql, { depth: null });
