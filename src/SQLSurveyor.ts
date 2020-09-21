@@ -37,6 +37,12 @@ export class SQLSurveyor {
   }
 
   survey(sqlScript: string): ParsedSql {
+    let removedTrailingPeriod: boolean = false;
+    if (sqlScript.endsWith('.') && this._dialect === SQLDialect.MYSQL) {
+      // The MySQL Parser struggles with trailing '.' on incomplete SQL statements
+      sqlScript = sqlScript.substring(0, sqlScript.length - 1);
+      removedTrailingPeriod = true;
+    }
     const tokens = this._getTokens(sqlScript);
     const parser = this._getParser(tokens);
     const parsedTree = this._getParseTree(parser);
@@ -65,6 +71,15 @@ export class SQLSurveyor {
           }
           parsedQuery = subParsedQuery;
         }
+      }
+    }
+
+    if (removedTrailingPeriod) {
+      let parsedQuery = listener.parsedSql.getQueryAtLocation(sqlScript.length);
+      if (parsedQuery !== null && Object.keys(parsedQuery.tokens).length > 0) {
+        const tokens = Object.values(parsedQuery.tokens);
+        const lastToken = tokens[tokens.length - 1];
+        parsedQuery._addToken(new TokenLocation(lastToken.location.lineStart, lastToken.location.lineEnd, lastToken.location.stopIndex + 1, lastToken.location.stopIndex + 1), '.');
       }
     }
 
