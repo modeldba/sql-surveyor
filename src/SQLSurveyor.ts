@@ -138,6 +138,9 @@ export class SQLSurveyor {
       const candidates = core.collectCandidates(tokenIndex);
       for (const candidateToken of candidates.tokens) {
         let candidateTokenValue = parser.vocabulary.getDisplayName(candidateToken[0]);
+        if (this._dialect === SQLDialect.MYSQL && candidateTokenValue.endsWith('_SYMBOL')) {
+          candidateTokenValue = candidateTokenValue.substring(0, candidateTokenValue.length - 7);
+        }
         if (candidateTokenValue.startsWith("'") && candidateTokenValue.endsWith("'")) {
           candidateTokenValue = candidateTokenValue.substring(1, candidateTokenValue.length - 1);
         }
