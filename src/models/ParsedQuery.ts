@@ -170,7 +170,7 @@ export class ParsedQuery {
         nextTokenStartIndex = Number(tokenStartIndices[i + 1]);
       }
       const currentTokenStopIndex = this.tokens[tokenStartIndices[i]].location.stopIndex;
-      if (stringIndex >= currentTokenStopIndex 
+      if (stringIndex > currentTokenStopIndex 
           && nextTokenStartIndex !== null 
           && stringIndex < nextTokenStartIndex) {
         // We're past the current token, but before the next token
