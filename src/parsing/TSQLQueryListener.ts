@@ -1,10 +1,9 @@
-import { TSqlParserListener } from '../../output/tsql/TSqlParserListener';
+import { TSqlParserListener, TSQLGrammar } from 'antlr4ts-sql';
 import { TokenLocation } from '../models/TokenLocation';
 import { ParsedQuery } from '../models/ParsedQuery';
 import { QueryType } from '../models/QueryType';
 import { BaseSqlQueryListener } from './BaseSqlQueryListener';
 import { ReferencedTable } from '../models/ReferencedTable';
-import { ExpressionContext } from '../../output/tsql/TSqlParser';
 
 export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParserListener {
 
@@ -142,7 +141,7 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
   }
 
   exitExpression_elem(ctx) {
-    if (ctx.children[0] instanceof ExpressionContext) {
+    if (ctx.children[0] instanceof TSQLGrammar.ExpressionContext) {
       return this.exitColumn_elem(ctx.children[0]);
     } else if (ctx.children.length > 1) {
       return this.exitColumn_elem(ctx.children[ctx.children.length - 1]);

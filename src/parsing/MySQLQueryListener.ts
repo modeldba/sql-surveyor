@@ -1,10 +1,9 @@
-import { MultiQueryMySQLParserListener } from '../../output/mysql/MultiQueryMySQLParserListener';
+import { MultiQueryMySQLParserListener, MySQLGrammar } from 'antlr4ts-sql';
 import { BaseSqlQueryListener } from './BaseSqlQueryListener';
 import { TokenLocation } from '../models/TokenLocation';
 import { ParsedQuery } from '../models/ParsedQuery';
 import { QueryType } from '../models/QueryType';
 import { ReferencedTable } from '../models/ReferencedTable';
-import { SelectItemContext, CommonTableExpressionContext } from '../../output/mysql/MultiQueryMySQLParser';
 
 export class MySQLQueryListener extends BaseSqlQueryListener implements MultiQueryMySQLParserListener {
 
@@ -101,7 +100,7 @@ export class MySQLQueryListener extends BaseSqlQueryListener implements MultiQue
   enterSubquery(ctx: any) {
     // Don't include opening and closing parentheses
     const subqueryLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start + 1, ctx._stop.stop - 1);
-    if (!(ctx._parent instanceof CommonTableExpressionContext)) {
+    if (!(ctx._parent instanceof MySQLGrammar.CommonTableExpressionContext)) {
       let parsedQuery = this.parsedSql.getQueryAtLocation(subqueryLocation.startIndex);
       parsedQuery = parsedQuery.getSmallestQueryAtLocation(subqueryLocation.startIndex);
       parsedQuery._addSubQuery(new ParsedQuery(QueryType.DML, subqueryLocation.getToken(this.input), subqueryLocation));
@@ -162,7 +161,7 @@ export class MySQLQueryListener extends BaseSqlQueryListener implements MultiQue
   exitColumnRef(ctx: any) {
     let parentContext = ctx._parent;
     while (parentContext !== undefined) {
-      if (parentContext instanceof SelectItemContext) {
+      if (parentContext instanceof MySQLGrammar.SelectItemContext) {
         // This is an output column, don't record it as a referenced column
         return;
       }

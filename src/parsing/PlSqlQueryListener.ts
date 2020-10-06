@@ -1,10 +1,9 @@
 import { TokenLocation } from '../models/TokenLocation';
 import { ParsedQuery } from '../models/ParsedQuery';
 import { QueryType } from '../models/QueryType';
-import { PlSqlParserListener } from '../../output/plsql/PlSqlParserListener';
+import { PlSqlParserListener, PlSQLGrammar } from 'antlr4ts-sql';
 import { BaseSqlQueryListener } from './BaseSqlQueryListener';
 import { ReferencedTable } from '../models/ReferencedTable';
-import { Select_list_elementsContext, Factoring_elementContext, Subquery_factoring_clauseContext, Tableview_nameContext } from '../../output/plsql/PlSqlParser';
 
 export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlParserListener {
 
@@ -46,8 +45,8 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
     const subqueryLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     let parsedQuery = this.parsedSql.getQueryAtLocation(subqueryLocation.startIndex);
     parsedQuery = parsedQuery.getSmallestQueryAtLocation(subqueryLocation.startIndex);
-    if (!(ctx._parent instanceof Factoring_elementContext) // Ignore the "WITH name AS (query)" portion of CTE
-         && !(ctx._parent.children[0] instanceof Subquery_factoring_clauseContext) // Ignore the trailing portion of a CTE query
+    if (!(ctx._parent instanceof PlSQLGrammar.Factoring_elementContext) // Ignore the "WITH name AS (query)" portion of CTE
+         && !(ctx._parent.children[0] instanceof PlSQLGrammar.Subquery_factoring_clauseContext) // Ignore the trailing portion of a CTE query
          && !(parsedQuery.queryLocation.startIndex === subqueryLocation.startIndex
             && parsedQuery.queryLocation.stopIndex === subqueryLocation.stopIndex)) { // PLSQL grammar has EVERY query as a subquery, prevent repeating the same query
       parsedQuery._addSubQuery(new ParsedQuery(QueryType.DML, subqueryLocation.getToken(this.input), subqueryLocation));
@@ -70,7 +69,7 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
   }
 
   exitTableview_name(ctx: any) {
-    if (!(ctx._parent instanceof Select_list_elementsContext)) { // We already detect this context separately
+    if (!(ctx._parent instanceof PlSQLGrammar.Select_list_elementsContext)) { // We already detect this context separately
       const tableLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
       const referencedTable = this.parseContextToReferencedTable(ctx);
       let parsedQuery = this.parsedSql.getQueryAtLocation(tableLocation.startIndex);
@@ -103,7 +102,7 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
   exitGeneral_element(ctx: any) {
     let parentContext = ctx._parent;
     while (parentContext !== undefined) {
-      if (parentContext instanceof Select_list_elementsContext) {
+      if (parentContext instanceof PlSQLGrammar.Select_list_elementsContext) {
         // This is an output column, don't record it as a referenced column
         return;
       }

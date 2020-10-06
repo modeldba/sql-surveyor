@@ -1,10 +1,9 @@
-import { PLpgSQLParserListener } from '../../output/plpgsql/PLpgSQLParserListener';
+import { PLpgSQLParserListener, PLpgSQLGrammar } from 'antlr4ts-sql';
 import { BaseSqlQueryListener } from './BaseSqlQueryListener';
 import { TokenLocation } from '../models/TokenLocation';
 import { ParsedQuery } from '../models/ParsedQuery';
 import { QueryType } from '../models/QueryType';
 import { ReferencedTable } from '../models/ReferencedTable';
-import { Select_sublistContext, With_queryContext } from '../../output/plpgsql/PLpgSQLParser';
 
 export class PLpgSQLQueryListener extends BaseSqlQueryListener implements PLpgSQLParserListener {
 
@@ -33,7 +32,7 @@ export class PLpgSQLQueryListener extends BaseSqlQueryListener implements PLpgSQ
   }
 
   enterData_statement(ctx: any) {
-    if (!(ctx._parent instanceof With_queryContext)) { // Ignore the trailing portion of a CTE query
+    if (!(ctx._parent instanceof PLpgSQLGrammar.With_queryContext)) { // Ignore the trailing portion of a CTE query
       const queryLocation: TokenLocation = this._getClauseLocation(ctx);
       this.parsedSql._addQuery(new ParsedQuery(QueryType.DML, queryLocation.getToken(this.input), queryLocation));
     }
@@ -84,7 +83,7 @@ export class PLpgSQLQueryListener extends BaseSqlQueryListener implements PLpgSQ
   exitIndirection_var(ctx: any) {
     let parentContext = ctx._parent;
     while (parentContext !== undefined) {
-      if (parentContext instanceof Select_sublistContext) {
+      if (parentContext instanceof PLpgSQLGrammar.Select_sublistContext) {
         // This is an output column, don't record it as a referenced column
         return;
       }

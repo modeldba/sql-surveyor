@@ -1,39 +1,32 @@
-import { SQLDialect } from "./models/SQLDialect";
+// import { SQLDialect } from "./models/SQLDialect";
 import { ParsedSql } from "./models/ParsedSql";
-import {CaseChangingStream} from './parsing/CaseChangingStream';
 import {TSqlQueryListener} from "./parsing/TSQLQueryListener";
-import {TSqlParser, Tsql_fileContext} from '../output/tsql/TSqlParser';
-import {TSqlLexer} from '../output/tsql/TSqlLexer';
-import { ANTLRInputStream, CommonTokenStream, ConsoleErrorListener, Parser, BufferedTokenStream, CommonToken, Token } from 'antlr4ts';
-import { ParseTreeWalker } from "antlr4ts/tree/ParseTreeWalker";
+import { CommonTokenStream, ConsoleErrorListener, Parser, Token } from 'antlr4ts';
+// import { ParseTreeWalker } from "antlr4ts/tree/ParseTreeWalker";
 import { PredictionMode } from "antlr4ts/atn/PredictionMode";
 import { TokenLocation } from "./models/TokenLocation";
-import { CodeCompletionCore, SymbolTable } from "antlr4-c3";
+import { CodeCompletionCore } from "antlr4-c3";
 import { AutocompleteOption } from "./models/AutocompleteOption";
 import { AutocompleteOptionType } from "./models/AutocompleteOptionType";
 import { SimpleSQLLexer } from "./parsing/SimpleSQLLexer";
 import { TrackingErrorStrategy } from "./parsing/TrackingErrorStrategy";
-import { PlSqlParser } from "../output/plsql/PlSqlParser";
-import { PlSqlLexer } from "../output/plsql/PlSqlLexer";
-import { ParseTree } from "antlr4ts/tree/ParseTree";
 import { PlSqlQueryListener } from "./parsing/PlSqlQueryListener";
 import { MySQLQueryListener } from "./parsing/MySQLQueryListener";
 import { BaseSqlQueryListener } from "./parsing/BaseSqlQueryListener";
-import { MultiQueryMySQLParser } from "../output/mysql/MultiQueryMySQLParser";
-import { MySQLLexer } from "../output/mysql/MySQLLexer";
-import { PLpgSQLLexer } from "../output/plpgsql/PLpgSQLLexer";
-import { PLpgSQLParser } from "../output/plpgsql/PLpgSQLParser";
 import { PLpgSQLQueryListener } from "./parsing/PLpgSQLQueryListener";
+import { antlr4tsSQL, SQLDialect, TSQLGrammar, MySQLGrammar, PlSQLGrammar, PLpgSQLGrammar, ParseTreeWalker } from 'antlr4ts-sql';
 
 export class SQLSurveyor {
 
   _dialect: SQLDialect;
+  _antlr4tssql: antlr4tsSQL;
 
   constructor(dialect: SQLDialect) {
     this._dialect = dialect;
     if (this._dialect === null || this._dialect === undefined) {
       this._dialect = SQLDialect.TSQL;
     }
+    this._antlr4tssql = new antlr4tsSQL(this._dialect);
   }
 
   survey(sqlScript: string): ParsedSql {
@@ -43,9 +36,9 @@ export class SQLSurveyor {
       sqlScript = sqlScript.substring(0, sqlScript.length - 1);
       removedTrailingPeriod = true;
     }
-    const tokens = this._getTokens(sqlScript);
+    const tokens = this._antlr4tssql.getTokens(sqlScript);
     const parser = this._getParser(tokens);
-    const parsedTree = this._getParseTree(parser);
+    const parsedTree = this._antlr4tssql.getParseTree(parser);
     const listener = this._getListener(sqlScript);
     
     // Populate the parsedSql object on the listener
@@ -106,7 +99,7 @@ export class SQLSurveyor {
       // it's not needed and keeping it in may impact which token gets selected for prediction
       sqlScript = sqlScript.substring(0, atIndex);
     }
-    const tokens = this._getTokens(sqlScript);
+    const tokens = this._antlr4tssql.getTokens(sqlScript);
     const parser = this._getParser(tokens);
     const core = new CodeCompletionCore(parser);
     const preferredRulesTable = this._getPreferredRulesForTable();
@@ -177,51 +170,12 @@ export class SQLSurveyor {
     return autocompleteOptions;
   }
 
-  _getTokens(sqlScript: string): CommonTokenStream {
-    const chars = new ANTLRInputStream(sqlScript);
-    const caseChangingCharStream = new CaseChangingStream(chars, true);
-    let lexer = null;
-    if (this._dialect === SQLDialect.TSQL) {
-      lexer = new TSqlLexer(caseChangingCharStream);
-    } else if (this._dialect === SQLDialect.PLSQL) {
-      lexer = new PlSqlLexer(caseChangingCharStream);
-    } else if (this._dialect === SQLDialect.PLpgSQL) {
-      lexer = new PLpgSQLLexer(chars);
-    } else if (this._dialect === SQLDialect.MYSQL) {
-      lexer = new MySQLLexer(chars);
-    }
-    const tokens = new CommonTokenStream(lexer);
-    return tokens;
-  }
-
   _getParser(tokens: CommonTokenStream): Parser {
-    let parser = null;
-    if (this._dialect === SQLDialect.TSQL) {
-      parser = new TSqlParser(tokens);
-    } else if (this._dialect === SQLDialect.PLSQL) {
-      parser = new PlSqlParser(tokens);
-    } else if (this._dialect === SQLDialect.PLpgSQL) {
-      parser = new PLpgSQLParser(tokens);
-    } else if (this._dialect === SQLDialect.MYSQL) {
-      parser = new MultiQueryMySQLParser(tokens);
-    }
+    let parser = this._antlr4tssql.getParser(tokens);
     parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
     parser.errorHandler = new TrackingErrorStrategy();
     parser.interpreter.setPredictionMode(PredictionMode.LL);
     return parser;
-  }
-
-  _getParseTree(parser: Parser): ParseTree {
-    if (parser instanceof TSqlParser) {
-      return parser.tsql_file();
-    } else if (parser instanceof PlSqlParser) {
-      return (parser as PlSqlParser).sql_script();
-    } else if (parser instanceof PLpgSQLParser) {
-      return (parser as PLpgSQLParser).sql();
-    } else if (this._dialect === SQLDialect.MYSQL) {
-      return (parser as MultiQueryMySQLParser).sql_script();
-    }
-    return null;
   }
 
   _getListener(sqlScript: string): BaseSqlQueryListener {
@@ -293,25 +247,25 @@ export class SQLSurveyor {
   _getPreferredRulesForTable(): number[] {
     if (this._dialect === SQLDialect.TSQL) {
       return [
-        TSqlParser.RULE_table_name,
-        TSqlParser.RULE_table_name_with_hint,
-        TSqlParser.RULE_full_table_name,
-        TSqlParser.RULE_table_source
+        TSQLGrammar.TSqlParser.RULE_table_name,
+        TSQLGrammar.TSqlParser.RULE_table_name_with_hint,
+        TSQLGrammar.TSqlParser.RULE_full_table_name,
+        TSQLGrammar.TSqlParser.RULE_table_source
       ];
     } else if (this._dialect === SQLDialect.MYSQL) {
       return [
-        MultiQueryMySQLParser.RULE_tableRef,
-        MultiQueryMySQLParser.RULE_fieldIdentifier
+        MySQLGrammar.MultiQueryMySQLParser.RULE_tableRef,
+        MySQLGrammar.MultiQueryMySQLParser.RULE_fieldIdentifier
       ]
     } else if (this._dialect === SQLDialect.PLSQL) {
       return [
-        PlSqlParser.RULE_tableview_name,
-        PlSqlParser.RULE_table_element
+        PlSQLGrammar.PlSqlParser.RULE_tableview_name,
+        PlSQLGrammar.PlSqlParser.RULE_table_element
       ]
     } else if (this._dialect === SQLDialect.PLpgSQL) {
       return [
-        PLpgSQLParser.RULE_schema_qualified_name,
-        PLpgSQLParser.RULE_indirection_var
+        PLpgSQLGrammar.PLpgSQLParser.RULE_schema_qualified_name,
+        PLpgSQLGrammar.PLpgSQLParser.RULE_indirection_var
       ];
     }
     return [];
@@ -320,28 +274,28 @@ export class SQLSurveyor {
   _getPreferredRulesForColumn(): number[] {
     if (this._dialect === SQLDialect.TSQL) {
       return [
-        TSqlParser.RULE_column_elem,
-        TSqlParser.RULE_column_alias,
-        TSqlParser.RULE_full_column_name,
-        TSqlParser.RULE_full_column_name_list,
-        TSqlParser.RULE_column_name_list,
-        TSqlParser.RULE_column_name_list_with_order,
-        TSqlParser.RULE_output_column_name,
-        TSqlParser.RULE_column_declaration
+        TSQLGrammar.TSqlParser.RULE_column_elem,
+        TSQLGrammar.TSqlParser.RULE_column_alias,
+        TSQLGrammar.TSqlParser.RULE_full_column_name,
+        TSQLGrammar.TSqlParser.RULE_full_column_name_list,
+        TSQLGrammar.TSqlParser.RULE_column_name_list,
+        TSQLGrammar.TSqlParser.RULE_column_name_list_with_order,
+        TSQLGrammar.TSqlParser.RULE_output_column_name,
+        TSQLGrammar.TSqlParser.RULE_column_declaration
       ];
     } else if (this._dialect === SQLDialect.MYSQL) {
       return [
-        MultiQueryMySQLParser.RULE_columnRef
+        MySQLGrammar.MultiQueryMySQLParser.RULE_columnRef
       ];
     } else if (this._dialect === SQLDialect.PLSQL) {
       return [
-        PlSqlParser.RULE_column_name,
-        PlSqlParser.RULE_general_element
+        PlSQLGrammar.PlSqlParser.RULE_column_name,
+        PlSQLGrammar.PlSqlParser.RULE_general_element
       ];
     } else if (this._dialect === SQLDialect.PLpgSQL) {
       return [
-        PLpgSQLParser.RULE_indirection_var,
-        PLpgSQLParser.RULE_indirection_identifier
+        PLpgSQLGrammar.PLpgSQLParser.RULE_indirection_var,
+        PLpgSQLGrammar.PLpgSQLParser.RULE_indirection_identifier
       ];
     }
     return [];
@@ -350,44 +304,44 @@ export class SQLSurveyor {
   _getTokensToIgnore(): number[] {
     if (this._dialect === SQLDialect.TSQL) {
       return [
-        TSqlParser.DOT,
-        TSqlParser.COMMA,
-        TSqlParser.ID,
-        TSqlParser.LR_BRACKET,
-        TSqlParser.RR_BRACKET
+        TSQLGrammar.TSqlParser.DOT,
+        TSQLGrammar.TSqlParser.COMMA,
+        TSQLGrammar.TSqlParser.ID,
+        TSQLGrammar.TSqlParser.LR_BRACKET,
+        TSQLGrammar.TSqlParser.RR_BRACKET
       ];
     } else if (this._dialect === SQLDialect.MYSQL) {
       return [
-        MultiQueryMySQLParser.DOT_SYMBOL,
-        MultiQueryMySQLParser.COMMA_SYMBOL,
-        MultiQueryMySQLParser.SEMICOLON_SYMBOL,
-        MultiQueryMySQLParser.IDENTIFIER,
-        MultiQueryMySQLParser.OPEN_PAR_SYMBOL,
-        MultiQueryMySQLParser.CLOSE_PAR_SYMBOL,
-        MultiQueryMySQLParser.OPEN_CURLY_SYMBOL,
-        MultiQueryMySQLParser.CLOSE_CURLY_SYMBOL
+        MySQLGrammar.MultiQueryMySQLParser.DOT_SYMBOL,
+        MySQLGrammar.MultiQueryMySQLParser.COMMA_SYMBOL,
+        MySQLGrammar.MultiQueryMySQLParser.SEMICOLON_SYMBOL,
+        MySQLGrammar.MultiQueryMySQLParser.IDENTIFIER,
+        MySQLGrammar.MultiQueryMySQLParser.OPEN_PAR_SYMBOL,
+        MySQLGrammar.MultiQueryMySQLParser.CLOSE_PAR_SYMBOL,
+        MySQLGrammar.MultiQueryMySQLParser.OPEN_CURLY_SYMBOL,
+        MySQLGrammar.MultiQueryMySQLParser.CLOSE_CURLY_SYMBOL
       ];
     } else if (this._dialect === SQLDialect.PLSQL) {
       return [
-        PlSqlParser.PERIOD,
-        PlSqlParser.COMMA,
-        PlSqlParser.SEMICOLON,
-        PlSqlParser.DOUBLE_PERIOD,
-        PlSqlParser.IDENTIFIER,
-        PlSqlParser.LEFT_PAREN,
-        PlSqlParser.RIGHT_PAREN
+        PlSQLGrammar.PlSqlParser.PERIOD,
+        PlSQLGrammar.PlSqlParser.COMMA,
+        PlSQLGrammar.PlSqlParser.SEMICOLON,
+        PlSQLGrammar.PlSqlParser.DOUBLE_PERIOD,
+        PlSQLGrammar.PlSqlParser.IDENTIFIER,
+        PlSQLGrammar.PlSqlParser.LEFT_PAREN,
+        PlSQLGrammar.PlSqlParser.RIGHT_PAREN
       ];
     } else if (this._dialect === SQLDialect.PLpgSQL) {
       return [
-        PLpgSQLParser.DOT,
-        PLpgSQLParser.COMMA,
-        PLpgSQLParser.SEMI_COLON,
-        PLpgSQLParser.DOUBLE_DOT,
-        PLpgSQLParser.Identifier,
-        PLpgSQLParser.LEFT_PAREN,
-        PLpgSQLParser.RIGHT_PAREN,
-        PLpgSQLParser.LEFT_BRACKET,
-        PLpgSQLParser.RIGHT_BRACKET
+        PLpgSQLGrammar.PLpgSQLParser.DOT,
+        PLpgSQLGrammar.PLpgSQLParser.COMMA,
+        PLpgSQLGrammar.PLpgSQLParser.SEMI_COLON,
+        PLpgSQLGrammar.PLpgSQLParser.DOUBLE_DOT,
+        PLpgSQLGrammar.PLpgSQLParser.Identifier,
+        PLpgSQLGrammar.PLpgSQLParser.LEFT_PAREN,
+        PLpgSQLGrammar.PLpgSQLParser.RIGHT_PAREN,
+        PLpgSQLGrammar.PLpgSQLParser.LEFT_BRACKET,
+        PLpgSQLGrammar.PLpgSQLParser.RIGHT_BRACKET
       ];
     }
     return [];
