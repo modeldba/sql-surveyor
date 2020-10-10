@@ -1,4 +1,4 @@
-import { DefaultErrorStrategy, Parser, FailedPredicateException, NoViableAltException, RecognitionException, InputMismatchException } from "antlr4ts";
+import { DefaultErrorStrategy, Parser, FailedPredicateException, NoViableAltException, InputMismatchException } from "antlr4ts-sql";
 import { ParsingError } from "../models/ParsingError";
 import { Token } from "../models/Token";
 import { TokenLocation } from "../models/TokenLocation";

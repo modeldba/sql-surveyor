@@ -1,4 +1,4 @@
-import { Interval } from "antlr4ts/misc/Interval";
+import { Interval } from "antlr4ts-sql";
 
 export class CaseChangingStream {
 
