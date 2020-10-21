@@ -1,4 +1,4 @@
-# SQLsurveyor
+# sql-surveyor
 
 SQL Surveyor is a zero configuration, high-level SQL parser. Existing parsers are low-level, giving you parse trees instead of
 easy access to query details. So we built a high-level parser that handles all the parse tree analysis and
