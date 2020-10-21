@@ -33,7 +33,7 @@
   },
   "homepage": "https://modeldba.com/sql-surveyor",
   "dependencies": {
-    "antlr4ts-sql": "antlr4ts-sql^1.0.2"
+    "antlr4ts-sql": "^1.0.2"
   },
   "devDependencies": {
     "@types/jest": "^26.0.4",
