@@ -1,7 +1,3 @@
-import {InputStream, CommonTokenStream, tree} from 'antlr4';
-import {TSqlQueryListener} from './src/parsing/TSQLQueryListener';
-import {CaseChangingStream} from './src/parsing/CaseChangingStream'
-import { TokenLocation } from './src/models/TokenLocation';
 import { SQLSurveyor, SQLDialect } from './dist/index';
 
 const input = 'SELECT * FROM tableName t1 \r\n JOIN tableName2 t2 ON t1.id = t2.id';
@@ -15,8 +11,7 @@ const input = 'SELECT * FROM tableName t1 \r\n JOIN tableName2 t2 ON t1.id = t2.
 // const input = 'UPDATE departments SET department_name = \'lol\' WHERE dept_num = 1';
 // const input = 'SELECT * FROM tab WHERE col1 =';
 // const input = 'SELECT * FROM; SELECT * FROM tab2';
-const surveyor = new SQLSurveyor(SQLDialect.PLSQL);
+// const input = 'SELECT t1.columnA as ca, t2.columnB FROM table1 t1 JOIN table2 t2 ON t1.id = t2.table1_id';
+const surveyor = new SQLSurveyor(SQLDialect.MYSQL);
 const parsedSql = surveyor.survey(input);
-console.dir(parsedSql, { depth: null });
-const autocompleteOptions = surveyor.autocomplete(input, 11);
-// console.dir(autocompleteOptions, { depth: null });
+console.dir(parsedSql.parsedQueries, { depth: null });

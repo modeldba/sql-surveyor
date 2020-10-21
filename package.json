@@ -1,7 +1,7 @@
 {
-  "name": "sqlsurveyor",
+  "name": "sql-surveyor",
   "version": "1.0.0",
-  "description": "High-level SQL parser",
+  "description": "High-level SQL parser. Identify tables, columns, aliases and more from your SQL script in one easy to consume object. Supports PostgreSQL, MySQL, SQL Server and Oracle (PL/SQL) dialects.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -10,10 +10,30 @@
     "test": "npx jest",
     "cleantest": "npm run build && npm test"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/modeldba/sql-surveyor.git"
+  },
+  "keywords": [
+    "sql",
+    "parser",
+    "database",
+    "postgresql",
+    "mysql",
+    "sqlserver",
+    "oracle",
+    "plpgsql",
+    "plsql",
+    "tsql"
+  ],
   "author": "modelDBA",
-  "license": "ISC",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/modeldba/sql-surveyor/issues"
+  },
+  "homepage": "https://modeldba.com/sql-surveyor",
   "dependencies": {
-    "antlr4ts-sql": "file:../antlr4ts-sql"
+    "antlr4ts-sql": "antlr4ts-sql^1.0.2"
   },
   "devDependencies": {
     "@types/jest": "^26.0.4",

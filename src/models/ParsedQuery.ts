@@ -202,11 +202,11 @@ export class ParsedQuery {
     return null;
   }
 
-  getReferencedColumn(columnName: string, tableName: string, tableAlias: string) {
+  getReferencedColumn(columnName: string, tableName?: string, tableAlias?: string): ReferencedColumn {
     for (const referencedColumn of this.referencedColumns) {
       if (referencedColumn.columnName === columnName) {
-        if ((tableName === null || referencedColumn.tableName === tableName) 
-              && (tableAlias === null || referencedColumn.tableAlias === tableAlias)) {
+        if ((tableName === null || tableName === undefined || referencedColumn.tableName === tableName) 
+              && (tableAlias === null || tableAlias === undefined || referencedColumn.tableAlias === tableAlias)) {
            return referencedColumn;
         }
       }
@@ -220,7 +220,7 @@ export class ParsedQuery {
    * the specified index
    * @param stringIndex 
    */
-  getSmallestQueryAtLocation(stringIndex: number) {
+  getSmallestQueryAtLocation(stringIndex: number): ParsedQuery {
     let smallestQuery: ParsedQuery = this;
     let smallerQuery: ParsedQuery = this;
     while (smallerQuery !== null) {

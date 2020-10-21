@@ -9,7 +9,7 @@ export class Token {
     this.location = location;
   }
 
-  setValue(input: string) {
+  setValue(input: string): void {
     this.value = this.location.getToken(input);
   }
 }

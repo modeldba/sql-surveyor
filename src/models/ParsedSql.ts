@@ -44,7 +44,7 @@ export class ParsedSql {
     return locations;
   }
 
-  _addQuery(parsedQuery: ParsedQuery) {
+  _addQuery(parsedQuery: ParsedQuery): void {
     this.parsedQueries[parsedQuery.queryLocation.startIndex] = parsedQuery;
   }
 
