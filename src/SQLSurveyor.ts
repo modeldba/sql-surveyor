@@ -34,8 +34,13 @@ export class SQLSurveyor {
     const listener = this._getListener(sqlScript);
     
     // Populate the parsedSql object on the listener
-    // @ts-ignore Weak Type Detection
-    ParseTreeWalker.DEFAULT.walk(listener, parsedTree);
+    try {
+      // @ts-ignore Weak Type Detection
+      ParseTreeWalker.DEFAULT.walk(listener, parsedTree);
+    } catch (e) {
+      // We'll attempt to complete surveying
+      console.error(e);
+    }
     for (const parsedQuery of Object.values(listener.parsedSql.parsedQueries)) {
       parsedQuery._consolidateTables();
     }
@@ -45,16 +50,18 @@ export class SQLSurveyor {
       if (commonToken.channel !== Token.HIDDEN_CHANNEL) {
         const tokenLocation: TokenLocation = new TokenLocation(commonToken._line, commonToken._line, commonToken.start, commonToken.stop);
         let parsedQuery = listener.parsedSql.getQueryAtLocation(commonToken.start);
-        const token = tokenLocation.getToken(sqlScript);
-        while (parsedQuery !== null) {
-          if (token.length > 0) {
-            parsedQuery._addToken(tokenLocation, token);
+        if (parsedQuery !== null) {
+          const token = tokenLocation.getToken(sqlScript);
+          while (parsedQuery !== null) {
+            if (token.length > 0) {
+              parsedQuery._addToken(tokenLocation, token);
+            }
+            let subParsedQuery = parsedQuery._getCommonTableExpressionAtLocation(commonToken.start);
+            if (subParsedQuery === null) {
+              subParsedQuery = parsedQuery._getSubqueryAtLocation(commonToken.start);
+            }
+            parsedQuery = subParsedQuery;
           }
-          let subParsedQuery = parsedQuery._getCommonTableExpressionAtLocation(commonToken.start);
-          if (subParsedQuery === null) {
-            subParsedQuery = parsedQuery._getSubqueryAtLocation(commonToken.start);
-          }
-          parsedQuery = subParsedQuery;
         }
       }
     }
@@ -83,11 +90,15 @@ export class SQLSurveyor {
     }
 
     return listener.parsedSql;
-  }  
+  }
+
+  _getTokens(sqlScript: string): CommonTokenStream {
+    const tokens = this._antlr4tssql.getTokens(sqlScript, []);
+    return tokens;
+  }
 
   _getParser(tokens: CommonTokenStream): Parser {
-    let parser = this._antlr4tssql.getParser(tokens);
-    parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
+    let parser = this._antlr4tssql.getParser(tokens, []);
     parser.errorHandler = new TrackingErrorStrategy();
     parser.interpreter.setPredictionMode(PredictionMode.LL);
     return parser;
