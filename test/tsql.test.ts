@@ -105,7 +105,7 @@ test('that output column names and aliases are correctly parsed', () => {
   expect(column2.tableAlias).toBeNull();
 
   const column3 = parsedQuery.outputColumns[2];
-  expect(column3.columnName).toBe('col3');
+  expect(column3.columnName).toBe('t1.col3');
   expect(column3.columnAlias).toBe('c3');
   expect(column3.tableName).toBe('tableName');
   expect(column3.tableAlias).toBe('t1');
@@ -169,4 +169,31 @@ test('that output column names and aliases are correctly parsed', () => {
   expect(column13.columnAlias).toBe('final');
   expect(column13.tableName).toBeNull();
   expect(column13.tableAlias).toBeNull();
+});
+
+test('that output column names and aliases are correctly parsed when subquery has a period', () => {
+  let sql = 'select e2.employee_num, (select max(e.employee_num) from employees e) as counter, schemaName.employees.employee_id as eid from employees e2;';
+  
+  const parsedSql: ParsedSql = surveyor.survey(sql);
+  expect(Object.keys(parsedSql.parsedQueries).length).toBe(1);
+  const parsedQuery = parsedSql.getQueryAtLocation(0);
+  expect(Object.keys(parsedQuery.outputColumns).length).toBe(3);
+
+  const column = parsedQuery.outputColumns[0];
+  expect(column.columnName).toBe('e2.employee_num');
+  expect(column.columnAlias).toBeNull();
+  expect(column.tableName).toBe('employees');
+  expect(column.tableAlias).toBe('e2');
+
+  const column2 = parsedQuery.outputColumns[1];
+  expect(column2.columnName).toBe('(select max(e.employee_num) from employees e)');
+  expect(column2.columnAlias).toBe('counter');
+  expect(column2.tableName).toBeNull();
+  expect(column2.tableAlias).toBeNull();
+
+  const column3 = parsedQuery.outputColumns[2];
+  expect(column3.columnName).toBe('schemaName.employees.employee_id');
+  expect(column3.columnAlias).toBe('eid');
+  expect(column3.tableName).toBe('schemaName.employees');
+  expect(column3.tableAlias).toBeNull();
 });

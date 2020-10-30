@@ -14,8 +14,12 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
     return value;
   }
 
-  getAliasStartIndex(value: string): number {
-    return super.getAliasStartIndex(value, '"', '"');
+  _getAliasStartIndex(value: string): number {
+    return super._getAliasStartIndex(value, '"', '"');
+  }
+
+  _getTableAliasEndLocation(value: string): number {
+    return super._getTableAliasEndLocation(value, '"', '"');
   }
 
   parseContextToReferencedTable(ctx: any) {
@@ -119,21 +123,25 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
     const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     let parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
     parsedQuery = parsedQuery.getSmallestQueryAtLocation(columnLocation.startIndex);
-    const columnText = columnLocation.getToken(this.input);
+    let columnText = columnLocation.getToken(this.input);
     let columnName = columnText;
     let columnAlias = null;
     let tableNameOrAlias = null;
     if (columnText.includes('.')) {
-      const columnTextSplit: string[] = columnText.split('.');
-      columnName = this.unquote(columnTextSplit[columnTextSplit.length - 1]);
-      tableNameOrAlias = this.unquote(columnTextSplit[columnTextSplit.length - 2]);
-      let tableNameOrAliasStartIndex = columnLocation.stopIndex - columnTextSplit[columnTextSplit.length - 1].length - columnTextSplit[columnTextSplit.length - 2].length;
-      let tableNameOrAliasStopIndex = tableNameOrAliasStartIndex + columnTextSplit[columnTextSplit.length - 2].length - 1;
-      const tableNameOrAliasLocation = new TokenLocation(columnLocation.lineStart, columnLocation.lineEnd, tableNameOrAliasStartIndex, tableNameOrAliasStopIndex);
-      parsedQuery._addTableNameLocation(tableNameOrAlias, tableNameOrAliasLocation, null, null);
+      // Column may have a table alias
+      const functionArgumentLocation = this._getFunctionArgumentLocation(ctx, columnLocation);
+      if (functionArgumentLocation !== null) {
+        columnText = functionArgumentLocation.getToken(this.input);
+      }
+      const tableNameOrAliasStopIndex = this._getTableAliasEndLocation(columnText);
+      if (tableNameOrAliasStopIndex !== null) {
+        tableNameOrAlias = this.unquote(columnText.substring(0, tableNameOrAliasStopIndex));
+        const tableNameOrAliasLocation = new TokenLocation(columnLocation.lineStart, columnLocation.lineEnd, columnLocation.startIndex, columnLocation.startIndex + tableNameOrAliasStopIndex - 1);
+        parsedQuery._addTableNameLocation(tableNameOrAlias, tableNameOrAliasLocation, null, null);
+      }
     }
     columnName = columnName.trim();
-    const lastUnquotedSpaceIndex = this.getAliasStartIndex(columnName);
+    const lastUnquotedSpaceIndex = this._getAliasStartIndex(columnName);
     if (lastUnquotedSpaceIndex !== null) {
       // Column has an alias
       columnAlias = columnName.substring(lastUnquotedSpaceIndex);
@@ -147,6 +155,12 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
       columnAlias = this.unquote(columnAlias);
     }
     parsedQuery._addOutputColumn(columnName, columnAlias, tableNameOrAlias);
+  }
+
+  _getFunctionArgumentLocation(ctx: any, columnLocation: TokenLocation): TokenLocation {
+    const functionRules = [PlSQLGrammar.Numeric_functionContext, PlSQLGrammar.String_functionContext, PlSQLGrammar.Other_functionContext];
+    const argumentRules = [PlSQLGrammar.ExpressionContext];
+    return super._getFunctionArgumentLocation(ctx, columnLocation, functionRules, argumentRules);
   }
 
   exitSelected_list(ctx: any) {

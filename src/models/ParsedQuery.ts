@@ -262,7 +262,7 @@ export class ParsedQuery {
     for (let i = 0; i < queryStartIndices.length; i++) {
       const currentQueryStartIndex: number = Number(queryStartIndices[i]);
       if (stringIndex >= currentQueryStartIndex 
-          && stringIndex < queries[queryStartIndices[i]].queryLocation.stopIndex) {
+          && stringIndex <= queries[queryStartIndices[i]].queryLocation.stopIndex) {
         return i;
       }
     }

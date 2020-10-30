@@ -14,8 +14,12 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
     return value;
   }
 
-  getAliasStartIndex(value: string): number {
-    return super.getAliasStartIndex(value, '[', ']');
+  _getAliasStartIndex(value: string): number {
+    return super._getAliasStartIndex(value, '[', ']');
+  }
+
+  _getTableAliasEndLocation(value: string): number {
+    return super._getTableAliasEndLocation(value, '[', ']');
   }
 
   parseContextToReferencedTable(ctx: any) {
@@ -114,17 +118,23 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
     }
     let parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
     parsedQuery = parsedQuery.getSmallestQueryAtLocation(columnLocation.startIndex);
-    const columnText = columnLocation.getToken(this.input);
+    let columnText = columnLocation.getToken(this.input);
     let columnName = columnText;
     let columnAlias = null;
     let tableNameOrAlias = null;
     if (columnText.includes('.')) {
-      const columnTextSplit: string[] = columnText.split('.');
-      columnName = this.unquote(columnTextSplit[columnTextSplit.length - 1]);
-      tableNameOrAlias = this.unquote(columnTextSplit[columnTextSplit.length - 2]);
+      // Column may have a table alias
+      const functionArgumentLocation = this._getFunctionArgumentLocation(ctx, columnLocation);
+      if (functionArgumentLocation !== null) {
+        columnText = functionArgumentLocation.getToken(this.input);
+      }
+      const tableNameOrAliasStopIndex = this._getTableAliasEndLocation(columnText);
+      if (tableNameOrAliasStopIndex !== null) {
+        tableNameOrAlias = this.unquote(columnText.substring(0, tableNameOrAliasStopIndex));
+      }
     }
     columnName = columnName.trim();
-    const lastUnquotedSpaceIndex = this.getAliasStartIndex(columnName);
+    const lastUnquotedSpaceIndex = this._getAliasStartIndex(columnName);
     if (lastUnquotedSpaceIndex !== null) {
       // Column has an alias
       columnAlias = columnName.substring(lastUnquotedSpaceIndex);
@@ -138,6 +148,12 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
       columnAlias = this.unquote(columnAlias);
     }
     parsedQuery._addOutputColumn(columnName, columnAlias, tableNameOrAlias);
+  }
+
+  _getFunctionArgumentLocation(ctx: any, columnLocation: TokenLocation): TokenLocation {
+    const functionRules = [TSQLGrammar.Aggregate_windowed_functionContext, TSQLGrammar.Analytic_windowed_functionContext, TSQLGrammar.Ranking_windowed_functionContext];
+    const argumentRules = [TSQLGrammar.ExpressionContext, TSQLGrammar.All_distinct_expressionContext];
+    return super._getFunctionArgumentLocation(ctx, columnLocation, functionRules, argumentRules);
   }
 
   exitFull_column_name(ctx) {
