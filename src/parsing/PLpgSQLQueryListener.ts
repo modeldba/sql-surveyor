@@ -14,6 +14,10 @@ export class PLpgSQLQueryListener extends BaseSqlQueryListener implements PLpgSQ
     return value;
   }
 
+  getAliasStartIndex(value: string): number {
+    return super.getAliasStartIndex(value, '"', '"');
+  }
+
   parseContextToReferencedTable(ctx: any) {
     const tableLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     const tableText = tableLocation.getToken(this.input);
@@ -119,6 +123,7 @@ export class PLpgSQLQueryListener extends BaseSqlQueryListener implements PLpgSQ
     parsedQuery = parsedQuery.getSmallestQueryAtLocation(columnLocation.startIndex);
     const columnText = columnLocation.getToken(this.input);
     let columnName = columnText;
+    let columnAlias = null;
     let tableNameOrAlias = null;
     if (columnText.includes('.')) {
       const columnTextSplit: string[] = columnText.split('.');
@@ -128,10 +133,22 @@ export class PLpgSQLQueryListener extends BaseSqlQueryListener implements PLpgSQ
       let tableNameOrAliasStopIndex = tableNameOrAliasStartIndex + columnTextSplit[columnTextSplit.length - 2].length - 1;
       const tableNameOrAliasLocation = new TokenLocation(columnLocation.lineStart, columnLocation.lineEnd, tableNameOrAliasStartIndex, tableNameOrAliasStopIndex);
       parsedQuery._addTableNameLocation(tableNameOrAlias, tableNameOrAliasLocation, null, null);
-    } else {
-      columnName = this.unquote(columnName);
     }
-    parsedQuery._addOutputColumn(columnName, tableNameOrAlias);
+    columnName = columnName.trim();
+    const lastUnquotedSpaceIndex = this.getAliasStartIndex(columnName);
+    if (lastUnquotedSpaceIndex !== null) {
+      // Column has an alias
+      columnAlias = columnName.substring(lastUnquotedSpaceIndex);
+      columnName = columnName.substring(0, lastUnquotedSpaceIndex - 1).trimEnd();
+      if (columnName.toUpperCase().endsWith('AS')) {
+        columnName = columnName.substring(0, columnName.length - 2).trimEnd();
+      }
+    }
+    columnName = this.unquote(columnName);
+    if (columnAlias !== null) {
+      columnAlias = this.unquote(columnAlias);
+    }
+    parsedQuery._addOutputColumn(columnName, columnAlias, tableNameOrAlias);
   }
 
 }

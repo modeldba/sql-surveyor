@@ -27,5 +27,32 @@ export class BaseSqlQueryListener {
     const queryLocation: TokenLocation = new TokenLocation(ctx._start._line, stopLine, ctx._start.start, stopIndex);
     return queryLocation;
   }
+
+  getAliasStartIndex(value: string, dbmsOpenQuoteChar: string, dbmsCloseQuoteChar: string): number {
+    let isInsideStringQuote = false;
+    let isInsideDBMSQuote = false;
+    let index = value.length - 1;
+    let isWhitespaceRegex = /\s/;
+    while (index >= 0) {
+      const currentChar = value[index];
+      if (currentChar === "'" && value[index - 1] !== '\\') {
+        isInsideStringQuote = !isInsideStringQuote;
+      }
+      if (currentChar === dbmsCloseQuoteChar && value[index - 1] !== '\\') {
+        isInsideDBMSQuote = true;
+      } else if (currentChar === dbmsOpenQuoteChar && value[index - 1] !== '\\') {
+        isInsideDBMSQuote = false;
+      }
+      if (currentChar === ')' && !isInsideStringQuote && !isInsideDBMSQuote) {
+        // Subquery without alias
+        return null;
+      }
+      if (isWhitespaceRegex.test(currentChar) && !isInsideStringQuote && !isInsideDBMSQuote) {
+        return index + 1;
+      }
+      index--;
+    }
+    return null;
+  }
   
 }

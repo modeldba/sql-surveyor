@@ -14,6 +14,10 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
     return value;
   }
 
+  getAliasStartIndex(value: string): number {
+    return super.getAliasStartIndex(value, '[', ']');
+  }
+
   parseContextToReferencedTable(ctx: any) {
     let databaseName: string = null;
     if (ctx._database !== undefined) {
@@ -104,19 +108,36 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
 
   exitColumn_elem(ctx) {
     const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+    if (ctx._parent.children[1] instanceof TSQLGrammar.As_column_aliasContext) {
+      columnLocation.lineEnd = (ctx._parent.children[1]._stop as any)._line;
+      columnLocation.stopIndex = (ctx._parent.children[1]._stop as any).stop;
+    }
     let parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
     parsedQuery = parsedQuery.getSmallestQueryAtLocation(columnLocation.startIndex);
     const columnText = columnLocation.getToken(this.input);
     let columnName = columnText;
+    let columnAlias = null;
     let tableNameOrAlias = null;
     if (columnText.includes('.')) {
       const columnTextSplit: string[] = columnText.split('.');
       columnName = this.unquote(columnTextSplit[columnTextSplit.length - 1]);
       tableNameOrAlias = this.unquote(columnTextSplit[columnTextSplit.length - 2]);
-    } else {
-      columnName = this.unquote(columnName);
     }
-    parsedQuery._addOutputColumn(columnName, tableNameOrAlias);
+    columnName = columnName.trim();
+    const lastUnquotedSpaceIndex = this.getAliasStartIndex(columnName);
+    if (lastUnquotedSpaceIndex !== null) {
+      // Column has an alias
+      columnAlias = columnName.substring(lastUnquotedSpaceIndex);
+      columnName = columnName.substring(0, lastUnquotedSpaceIndex - 1).trimEnd();
+      if (columnName.toUpperCase().endsWith('AS')) {
+        columnName = columnName.substring(0, columnName.length - 2).trimEnd();
+      }
+    }
+    columnName = this.unquote(columnName);
+    if (columnAlias !== null) {
+      columnAlias = this.unquote(columnAlias);
+    }
+    parsedQuery._addOutputColumn(columnName, columnAlias, tableNameOrAlias);
   }
 
   exitFull_column_name(ctx) {

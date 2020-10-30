@@ -82,3 +82,91 @@ test('that quote characters are removed from databases, schemas, tables, and col
   expect(parsedQuery.outputColumns[0].tableAlias).toBeNull();
 });
 
+
+test('that output column names and aliases are correctly parsed', () => {
+  let sql = 'SELECT col1 as c1, avg(col2) as average, t1.col3 as c3, col4 c4, (select count(*) from test), (select count(*) from test) as numRows, (select max(col1) from t1) maxval, '
+  sql += ' "space column", "space column 2" as space2, "space column 3" space3, \'a string value\', \'another string value\' another, \'final string value\' as final FROM tableName t1;';
+  
+  const parsedSql: ParsedSql = surveyor.survey(sql);
+  expect(Object.keys(parsedSql.parsedQueries).length).toBe(1);
+  const parsedQuery = parsedSql.getQueryAtLocation(0);
+  expect(Object.keys(parsedQuery.outputColumns).length).toBe(13);
+
+  const column = parsedQuery.outputColumns[0];
+  expect(column.columnName).toBe('col1');
+  expect(column.columnAlias).toBe('c1');
+  expect(column.tableName).toBeNull();
+  expect(column.tableAlias).toBeNull();
+
+  const column2 = parsedQuery.outputColumns[1];
+  expect(column2.columnName).toBe('avg(col2)');
+  expect(column2.columnAlias).toBe('average');
+  expect(column2.tableName).toBeNull();
+  expect(column2.tableAlias).toBeNull();
+
+  const column3 = parsedQuery.outputColumns[2];
+  expect(column3.columnName).toBe('col3');
+  expect(column3.columnAlias).toBe('c3');
+  expect(column3.tableName).toBe('tableName');
+  expect(column3.tableAlias).toBe('t1');
+
+  const column4 = parsedQuery.outputColumns[3];
+  expect(column4.columnName).toBe('col4');
+  expect(column4.columnAlias).toBe('c4');
+  expect(column4.tableName).toBeNull();
+  expect(column4.tableAlias).toBeNull();
+
+  const column5 = parsedQuery.outputColumns[4];
+  expect(column5.columnName).toBe('(select count(*) from test)');
+  expect(column5.columnAlias).toBeNull();
+  expect(column5.tableName).toBeNull();
+  expect(column5.tableAlias).toBeNull();
+
+  const column6 = parsedQuery.outputColumns[5];
+  expect(column6.columnName).toBe('(select count(*) from test)');
+  expect(column6.columnAlias).toBe('numRows');
+  expect(column6.tableName).toBeNull();
+  expect(column6.tableAlias).toBeNull();
+
+  const column7 = parsedQuery.outputColumns[6];
+  expect(column7.columnName).toBe('(select max(col1) from t1)');
+  expect(column7.columnAlias).toBe('maxval');
+  expect(column7.tableName).toBeNull();
+  expect(column7.tableAlias).toBeNull();
+
+  const column8 = parsedQuery.outputColumns[7];
+  expect(column8.columnName).toBe('space column');
+  expect(column8.columnAlias).toBeNull();
+  expect(column8.tableName).toBeNull();
+  expect(column8.tableAlias).toBeNull();
+
+  const column9 = parsedQuery.outputColumns[8];
+  expect(column9.columnName).toBe('space column 2');
+  expect(column9.columnAlias).toBe('space2');
+  expect(column9.tableName).toBeNull();
+  expect(column9.tableAlias).toBeNull();
+
+  const column10 = parsedQuery.outputColumns[9];
+  expect(column10.columnName).toBe('space column 3');
+  expect(column10.columnAlias).toBe('space3');
+  expect(column10.tableName).toBeNull();
+  expect(column10.tableAlias).toBeNull();
+
+  const column11 = parsedQuery.outputColumns[10];
+  expect(column11.columnName).toBe("'a string value'");
+  expect(column11.columnAlias).toBeNull();
+  expect(column11.tableName).toBeNull();
+  expect(column11.tableAlias).toBeNull();
+
+  const column12 = parsedQuery.outputColumns[11];
+  expect(column12.columnName).toBe("'another string value'");
+  expect(column12.columnAlias).toBe('another');
+  expect(column12.tableName).toBeNull();
+  expect(column12.tableAlias).toBeNull();
+
+  const column13 = parsedQuery.outputColumns[12];
+  expect(column13.columnName).toBe("'final string value'");
+  expect(column13.columnAlias).toBe('final');
+  expect(column13.tableName).toBeNull();
+  expect(column13.tableAlias).toBeNull();
+});

@@ -261,12 +261,8 @@ export class ParsedQuery {
     const queryStartIndices = Object.keys(queries);
     for (let i = 0; i < queryStartIndices.length; i++) {
       const currentQueryStartIndex: number = Number(queryStartIndices[i]);
-      let nextQueryStartIndex: number = null;
-      if (queryStartIndices[i + 1] !== undefined) {
-        nextQueryStartIndex = Number(queryStartIndices[i + 1]);
-      }
       if (stringIndex >= currentQueryStartIndex 
-        && ((nextQueryStartIndex === null && stringIndex < queries[queryStartIndices[i]].queryLocation.stopIndex) || stringIndex < nextQueryStartIndex)) {
+          && stringIndex < queries[queryStartIndices[i]].queryLocation.stopIndex) {
         return i;
       }
     }
@@ -281,7 +277,7 @@ export class ParsedQuery {
     this.commonTableExpressions[parsedQuery.queryLocation.startIndex] = parsedQuery;
   }
 
-  _addOutputColumn(columnName: string, tableNameOrAlias: string): void {
+  _addOutputColumn(columnName: string, columnAlias: string, tableNameOrAlias: string): void {
     let tableName = null;
     let tableAlias = null;
     if (tableNameOrAlias !== null) {
@@ -292,7 +288,7 @@ export class ParsedQuery {
         tableName = tableNameOrAlias;
       }
     }
-    const outputColumn = new OutputColumn(columnName, tableName, tableAlias);
+    const outputColumn = new OutputColumn(columnName, columnAlias, tableName, tableAlias);
     this.outputColumns.push(outputColumn);
   }
 
