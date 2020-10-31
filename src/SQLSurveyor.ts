@@ -28,7 +28,7 @@ export class SQLSurveyor {
       sqlScript = sqlScript.substring(0, sqlScript.length - 1);
       removedTrailingPeriod = true;
     }
-    const tokens = this._antlr4tssql.getTokens(sqlScript);
+    const tokens = this._getTokens(sqlScript);
     const parser = this._getParser(tokens);
     const parsedTree = this._antlr4tssql.getParseTree(parser);
     const listener = this._getListener(sqlScript);

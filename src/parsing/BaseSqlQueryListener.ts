@@ -48,6 +48,10 @@ export class BaseSqlQueryListener {
         return null;
       }
       if (isWhitespaceRegex.test(currentChar) && !isInsideStringQuote && !isInsideDBMSQuote) {
+        if (value.substring(index + 1).toUpperCase() === 'END') {
+          // Reserved keyword, not an alias (CASE statement, BEGIN...END transaction, etc)
+          return null;
+        }
         return index + 1;
       }
       index--;

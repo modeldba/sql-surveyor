@@ -190,3 +190,54 @@ test('that output column names and aliases are correctly parsed when subquery ha
   expect(column2.tableName).toBeNull();
   expect(column2.tableAlias).toBeNull();
 });
+
+test('that output column names and aliases are correctly parsed for a CASE statement', () => {
+  let sql = 'SELECT CASE WHEN a > 1 THEN 100 WHEN a < 1 THEN -100 ELSE 0 END FROM table1;';
+  
+  let parsedSql: ParsedSql = surveyor.survey(sql);
+  expect(Object.keys(parsedSql.parsedQueries).length).toBe(1);
+  let parsedQuery = parsedSql.getQueryAtLocation(0);
+  expect(Object.keys(parsedQuery.outputColumns).length).toBe(1);
+
+  let column = parsedQuery.outputColumns[0];
+  expect(column.columnName).toBe('CASE WHEN a > 1 THEN 100 WHEN a < 1 THEN -100 ELSE 0 END');
+  expect(column.columnAlias).toBeNull();
+  expect(column.tableName).toBeNull();
+  expect(column.tableAlias).toBeNull();
+
+  sql = 'SELECT CASE WHEN a > 1 THEN 100 WHEN a < 1 THEN -100 ELSE 0 END csstmt FROM table1;';
+  parsedSql = surveyor.survey(sql);
+  expect(Object.keys(parsedSql.parsedQueries).length).toBe(1);
+  parsedQuery = parsedSql.getQueryAtLocation(0);
+  expect(Object.keys(parsedQuery.outputColumns).length).toBe(1);
+
+  column = parsedQuery.outputColumns[0];
+  expect(column.columnName).toBe('CASE WHEN a > 1 THEN 100 WHEN a < 1 THEN -100 ELSE 0 END');
+  expect(column.columnAlias).toBe('csstmt');
+  expect(column.tableName).toBeNull();
+  expect(column.tableAlias).toBeNull();
+
+  sql = 'SELECT (CASE WHEN a > 1 THEN 100 WHEN a < 1 THEN -100 ELSE 0 END) FROM table1;';
+  parsedSql = surveyor.survey(sql);
+  expect(Object.keys(parsedSql.parsedQueries).length).toBe(1);
+  parsedQuery = parsedSql.getQueryAtLocation(0);
+  expect(Object.keys(parsedQuery.outputColumns).length).toBe(1);
+
+  column = parsedQuery.outputColumns[0];
+  expect(column.columnName).toBe('(CASE WHEN a > 1 THEN 100 WHEN a < 1 THEN -100 ELSE 0 END)');
+  expect(column.columnAlias).toBeNull();
+  expect(column.tableName).toBeNull();
+  expect(column.tableAlias).toBeNull();
+
+  sql = 'SELECT (CASE WHEN a > 1 THEN 100 WHEN a < 1 THEN -100 ELSE 0 END) csstmt FROM table1;';
+  parsedSql = surveyor.survey(sql);
+  expect(Object.keys(parsedSql.parsedQueries).length).toBe(1);
+  parsedQuery = parsedSql.getQueryAtLocation(0);
+  expect(Object.keys(parsedQuery.outputColumns).length).toBe(1);
+
+  column = parsedQuery.outputColumns[0];
+  expect(column.columnName).toBe('(CASE WHEN a > 1 THEN 100 WHEN a < 1 THEN -100 ELSE 0 END)');
+  expect(column.columnAlias).toBe('csstmt');
+  expect(column.tableName).toBeNull();
+  expect(column.tableAlias).toBeNull();
+});
