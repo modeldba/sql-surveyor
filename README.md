@@ -29,8 +29,8 @@ console.dir(parsedSql, { depth: null });
 //  parsedQueries: {
 //   '0': ParsedQuery {
 //    outputColumns: [
-//     OutputColumn { columnName: 'columnA', tableName: 'table1', tableAlias: 't1'},
-//     OutputColumn { columnName: 'columnB', tableName: 'table2', tableAlias: 't2'}
+//     OutputColumn { columnName: 'columnA', columnAlias: null, tableName: 'table1', tableAlias: 't1'},
+//     OutputColumn { columnName: 'columnB', columnAlias: null, tableName: 'table2', tableAlias: 't2'}
 //    ],
 //    referencedColumns: [
 //      ReferencedColumn { 
