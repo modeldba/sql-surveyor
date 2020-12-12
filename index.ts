@@ -8,5 +8,6 @@ export * from './src/models/ReferencedColumn';
 export * from './src/models/ReferencedTable';
 export * from './src/models/Token';
 export * from './src/models/TokenLocation';
+export * from './src/models/TokenType';
 export * from './src/models/ParsingError';
 export * from './src/models/ParsingErrorType';

@@ -6,7 +6,8 @@ import { PlSqlQueryListener } from "./parsing/PlSqlQueryListener";
 import { MySQLQueryListener } from "./parsing/MySQLQueryListener";
 import { BaseSqlQueryListener } from "./parsing/BaseSqlQueryListener";
 import { PLpgSQLQueryListener } from "./parsing/PLpgSQLQueryListener";
-import { antlr4tsSQL, SQLDialect, ConsoleErrorListener, ParseTreeWalker, PredictionMode, CommonTokenStream, Parser, Token } from 'antlr4ts-sql';
+import { antlr4tsSQL, SQLDialect, ParseTreeWalker, PredictionMode, CommonTokenStream, Parser, Token } from 'antlr4ts-sql';
+import { TokenTypeIdentifier } from "./lexing/TokenTypeIdentifier";
 
 export class SQLSurveyor {
 
@@ -46,6 +47,7 @@ export class SQLSurveyor {
     }
     
     // Load the tokens
+    const tokenTypeIdentifier = new TokenTypeIdentifier(this._dialect, parser);
     for (const commonToken of tokens.getTokens() as any[]) {
       if (commonToken.channel !== Token.HIDDEN_CHANNEL) {
         const tokenLocation: TokenLocation = new TokenLocation(commonToken._line, commonToken._line, commonToken.start, commonToken.stop);
@@ -54,7 +56,7 @@ export class SQLSurveyor {
           const token = tokenLocation.getToken(sqlScript);
           while (parsedQuery !== null) {
             if (token.length > 0) {
-              parsedQuery._addToken(tokenLocation, token);
+              parsedQuery._addToken(tokenLocation, tokenTypeIdentifier.getTokenType(commonToken.type), token);
             }
             let subParsedQuery = parsedQuery._getCommonTableExpressionAtLocation(commonToken.start);
             if (subParsedQuery === null) {
@@ -69,9 +71,9 @@ export class SQLSurveyor {
     if (removedTrailingPeriod) {
       let parsedQuery = listener.parsedSql.getQueryAtLocation(sqlScript.length);
       if (parsedQuery !== null && Object.keys(parsedQuery.tokens).length > 0) {
-        const tokens = Object.values(parsedQuery.tokens);
-        const lastToken = tokens[tokens.length - 1];
-        parsedQuery._addToken(new TokenLocation(lastToken.location.lineStart, lastToken.location.lineEnd, lastToken.location.stopIndex + 1, lastToken.location.stopIndex + 1), '.');
+        const queryTokens = Object.values(parsedQuery.tokens);
+        const lastToken = queryTokens[queryTokens.length - 1];
+        parsedQuery._addToken(new TokenLocation(lastToken.location.lineStart, lastToken.location.lineEnd, lastToken.location.stopIndex + 1, lastToken.location.stopIndex + 1), lastToken.type, '.');
       }
     }
 

@@ -1,11 +1,14 @@
 import { TokenLocation } from "./TokenLocation";
+import { TokenType } from "./TokenType";
 
 export class Token {
   value: string;
+  type: TokenType;
   location: TokenLocation;
 
-  constructor(value: string, location: TokenLocation) {
+  constructor(value: string, type: TokenType, location: TokenLocation) {
     this.value = value;
+    this.type = type;
     this.location = location;
   }
 

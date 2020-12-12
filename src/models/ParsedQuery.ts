@@ -5,6 +5,7 @@ import { ReferencedTable } from "./ReferencedTable";
 import { TokenLocation } from "./TokenLocation";
 import { Token } from "./Token";
 import { ParsingError } from "./ParsingError";
+import { TokenType } from "./TokenType";
 
 export class ParsedQuery {
 
@@ -338,8 +339,8 @@ export class ParsedQuery {
     this.referencedTables[tableName].locations.add(location);
   }
 
-  _addToken(location: TokenLocation, token: string): void {
-    this.tokens[location.startIndex] = new Token(token, location);
+  _addToken(location: TokenLocation, type: TokenType, token: string): void {
+    this.tokens[location.startIndex] = new Token(token, type, location);
   }
 
   /**

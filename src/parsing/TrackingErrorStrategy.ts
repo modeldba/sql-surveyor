@@ -48,7 +48,7 @@ export class TrackingErrorStrategy extends DefaultErrorStrategy {
   }
 
   _getToken(recognizer: Parser): Token {
-    const token = new Token(null, new TokenLocation(recognizer.currentToken.line, recognizer.currentToken.line, recognizer.currentToken.startIndex, recognizer.currentToken.stopIndex));
+    const token = new Token(null, null, new TokenLocation(recognizer.currentToken.line, recognizer.currentToken.line, recognizer.currentToken.startIndex, recognizer.currentToken.stopIndex));
     if (token.location.startIndex > token.location.stopIndex) {
       // Error was at <EOF>, set token at end
       token.location.startIndex = token.location.stopIndex;
