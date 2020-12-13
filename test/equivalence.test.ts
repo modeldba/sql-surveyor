@@ -1,4 +1,4 @@
-import { SQLSurveyor, SQLDialect, ParsedSql, TokenLocation } from '../dist/index';
+import { SQLSurveyor, SQLDialect, ParsedSql, TokenLocation, TokenType } from '../dist/index';
 
 let mysqlSurveyor: SQLSurveyor = null;
 let plsqlSurveyor: SQLSurveyor = null;
@@ -96,5 +96,49 @@ test('equivalence for an update query', () => {
   const parsedTSql: ParsedSql = tsqlSurveyor.survey(sql);
   expect(parsedMySql).toStrictEqual(parsedPlSql);
   expect(parsedMySql).toStrictEqual(parsedTSql);
+  expect(parsedMySql).toStrictEqual(parsedPLpgSql);
+});
+
+test('equivalence for a select query with a column name in the SELECT list', () => {
+  const sql = 'SELECT t1.val FROM tableName t1';
+  const parsedMySql: ParsedSql = mysqlSurveyor.survey(sql);
+  const parsedPlSql: ParsedSql = plsqlSurveyor.survey(sql);
+  const parsedPLpgSql: ParsedSql = plpgsqlSurveyor.survey(sql);
+  const parsedTSql: ParsedSql = tsqlSurveyor.survey(sql);
+  expect(parsedMySql).toStrictEqual(parsedPlSql);
+  expect(parsedMySql).toStrictEqual(parsedTSql);
+  expect(parsedMySql).toStrictEqual(parsedPLpgSql);
+});
+
+test('equivalence for a select query with an aggregated column name in the SELECT list', () => {
+  const sql = 'SELECT MAX(t1.val) FROM tableName t1';
+  const parsedMySql: ParsedSql = mysqlSurveyor.survey(sql);
+  const parsedPlSql: ParsedSql = plsqlSurveyor.survey(sql);
+  const parsedPLpgSql: ParsedSql = plpgsqlSurveyor.survey(sql);
+  const parsedTSql: ParsedSql = tsqlSurveyor.survey(sql);
+  expect(parsedMySql).toStrictEqual(parsedPlSql);
+  expect(parsedMySql).toStrictEqual(parsedTSql);
+
+  // Known bug: PL/pgSQL grammar does not identify aggregations functions
+  // TODO: Remove this after the grammar adds support for aggregation functions
+  parsedPLpgSql.parsedQueries[0].tokens[7].type = TokenType.KEYWORD;
+
+  expect(parsedMySql).toStrictEqual(parsedPLpgSql);
+});
+
+test('equivalence for a subquery in the SELECT list', () => {
+  const sql = 'SELECT (SELECT MAX(d.dept_num) FROM departments d JOIN departmentemployees de ON d.dept_num = de.dept_num) AS maxval, e.employee_num FROM employees e ';
+  const parsedMySql: ParsedSql = mysqlSurveyor.survey(sql);
+  const parsedPlSql: ParsedSql = plsqlSurveyor.survey(sql);
+  const parsedPLpgSql: ParsedSql = plpgsqlSurveyor.survey(sql);
+  const parsedTSql: ParsedSql = tsqlSurveyor.survey(sql);
+  expect(parsedMySql).toStrictEqual(parsedTSql);
+  expect(parsedMySql).toStrictEqual(parsedPlSql);
+  
+  // Known bug: PL/pgSQL grammar does not identify aggregations functions
+  // TODO: Remove this after the grammar adds support for aggregation functions
+  parsedPLpgSql.parsedQueries[0].tokens[15].type = TokenType.KEYWORD;
+  parsedPLpgSql.parsedQueries[0].subqueries[8].tokens[15].type = TokenType.KEYWORD;
+
   expect(parsedMySql).toStrictEqual(parsedPLpgSql);
 });

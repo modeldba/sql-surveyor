@@ -157,6 +157,17 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
   }
 
   exitFull_column_name(ctx) {
+    let parentContext = ctx._parent;
+    while (parentContext !== undefined) {
+      if (parentContext instanceof TSQLGrammar.Select_list_elemContext) {
+        // This is an output column, don't record it as a referenced column
+        return;
+      } else if (parentContext instanceof TSQLGrammar.SubqueryContext) {
+        // This is a subquery in the SELECT list, add the referenced column
+        break;
+      }
+      parentContext = parentContext._parent;
+    }
     const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     let parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
     parsedQuery = parsedQuery.getSmallestQueryAtLocation(columnLocation.startIndex);

@@ -113,6 +113,9 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
       if (parentContext instanceof PlSQLGrammar.Select_list_elementsContext) {
         // This is an output column, don't record it as a referenced column
         return;
+      } else if (parentContext instanceof PlSQLGrammar.SubqueryContext) {
+        // This is a subquery in the SELECT list, add the referenced column
+        break;
       }
       parentContext = parentContext._parent;
     }
@@ -120,7 +123,7 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
   }
 
   exitSelect_list_elements(ctx: any) {
-    const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+    let columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     let parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
     parsedQuery = parsedQuery.getSmallestQueryAtLocation(columnLocation.startIndex);
     let columnText = columnLocation.getToken(this.input);
@@ -132,6 +135,7 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
       const functionArgumentLocation = this._getFunctionArgumentLocation(ctx, columnLocation);
       if (functionArgumentLocation !== null) {
         columnText = functionArgumentLocation.getToken(this.input);
+        columnLocation = functionArgumentLocation;
       }
       const tableNameOrAliasStopIndex = this._getTableAliasEndLocation(columnText);
       if (tableNameOrAliasStopIndex !== null) {

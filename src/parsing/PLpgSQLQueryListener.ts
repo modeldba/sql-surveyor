@@ -94,6 +94,9 @@ export class PLpgSQLQueryListener extends BaseSqlQueryListener implements PLpgSQ
       if (parentContext instanceof PLpgSQLGrammar.Select_sublistContext) {
         // This is an output column, don't record it as a referenced column
         return;
+      } else if (parentContext instanceof PLpgSQLGrammar.Select_stmt_no_parensContext) {
+        // This is a subquery in the SELECT list, add the referenced column
+        break;
       }
       parentContext = parentContext._parent;
     }
@@ -122,7 +125,7 @@ export class PLpgSQLQueryListener extends BaseSqlQueryListener implements PLpgSQ
   }
 
   exitSelect_sublist(ctx: any) {
-    const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+    let columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
     let parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
     parsedQuery = parsedQuery.getSmallestQueryAtLocation(columnLocation.startIndex);
     let columnText = columnLocation.getToken(this.input);
@@ -134,6 +137,7 @@ export class PLpgSQLQueryListener extends BaseSqlQueryListener implements PLpgSQ
       const functionArgumentLocation = this._getFunctionArgumentLocation(ctx, columnLocation);
       if (functionArgumentLocation !== null) {
         columnText = functionArgumentLocation.getToken(this.input);
+        columnLocation = functionArgumentLocation;
       }
       const tableNameOrAliasStopIndex = this._getTableAliasEndLocation(columnText);
       if (tableNameOrAliasStopIndex !== null) {
