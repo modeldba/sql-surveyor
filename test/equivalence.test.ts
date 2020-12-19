@@ -142,3 +142,13 @@ test('equivalence for a subquery in the SELECT list', () => {
 
   expect(parsedMySql).toStrictEqual(parsedPLpgSql);
 });
+
+test('equivalence for "tableName AS alias" syntax', () => {
+  const sql = 'select f.id from foo as f';
+  const parsedMySql: ParsedSql = mysqlSurveyor.survey(sql);
+  const parsedPLpgSql: ParsedSql = plpgsqlSurveyor.survey(sql);
+  // Skip PL/SQL - Does not support "table AS alias" syntax
+  const parsedTSql: ParsedSql = tsqlSurveyor.survey(sql);
+  expect(parsedMySql).toStrictEqual(parsedTSql);
+  expect(parsedMySql).toStrictEqual(parsedPLpgSql);
+});

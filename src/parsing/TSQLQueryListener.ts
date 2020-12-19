@@ -134,11 +134,11 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
       }
     }
     columnName = columnName.trim();
-    const lastUnquotedSpaceIndex = this._getAliasStartIndex(columnName);
-    if (lastUnquotedSpaceIndex !== null) {
+    const aliasStartIndex = this._getAliasStartIndex(columnName);
+    if (aliasStartIndex !== null) {
       // Column has an alias
-      columnAlias = columnName.substring(lastUnquotedSpaceIndex);
-      columnName = columnName.substring(0, lastUnquotedSpaceIndex - 1).trimEnd();
+      columnAlias = columnName.substring(aliasStartIndex);
+      columnName = columnName.substring(0, aliasStartIndex - 1).trimEnd();
       if (columnName.toUpperCase().endsWith('AS')) {
         columnName = columnName.substring(0, columnName.length - 2).trimEnd();
       }

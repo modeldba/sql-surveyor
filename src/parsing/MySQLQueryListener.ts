@@ -182,10 +182,10 @@ export class MySQLQueryListener extends BaseSqlQueryListener implements MultiQue
     let parsedQuery = this.parsedSql.getQueryAtLocation(aliasLocation.startIndex);
     parsedQuery = parsedQuery.getSmallestQueryAtLocation(aliasLocation.startIndex);
     let aliasName = this.unquote(aliasLocation.getToken(this.input));
-    if (aliasName.includes(' ')) {
+    const aliasStartIndex = this._getAliasStartIndex(aliasName);
+    if (aliasStartIndex !== null) {
       // alias is in the format 'AS alias', ignore the 'AS '
-      const aliasTextSplit: string[] = aliasName.split(' ');
-      aliasName = this.unquote(aliasTextSplit[aliasTextSplit.length - 1]);
+      aliasName = aliasName.substring(aliasStartIndex);
     }
     parsedQuery._addAliasForTable(aliasName, referencedTable.tableName);
   }

@@ -84,7 +84,13 @@ export class PLpgSQLQueryListener extends BaseSqlQueryListener implements PLpgSQ
       const referencedTable = this.parseContextToReferencedTable(ctx._parent.children[0]);
       let parsedQuery = this.parsedSql.getQueryAtLocation(aliasLocation.startIndex);
       parsedQuery = parsedQuery.getSmallestQueryAtLocation(aliasLocation.startIndex);
-      parsedQuery._addAliasForTable(this.unquote(aliasLocation.getToken(this.input)), referencedTable.tableName);
+      let aliasName = this.unquote(aliasLocation.getToken(this.input));
+      const aliasStartIndex = this._getAliasStartIndex(aliasName);
+      if (aliasStartIndex !== null) {
+        // alias is in the format 'AS alias', ignore the 'AS '
+        aliasName = aliasName.substring(aliasStartIndex);
+      }
+      parsedQuery._addAliasForTable(aliasName, referencedTable.tableName);
     }
   }
 
@@ -147,11 +153,11 @@ export class PLpgSQLQueryListener extends BaseSqlQueryListener implements PLpgSQ
       }
     }
     columnName = columnName.trim();
-    const lastUnquotedSpaceIndex = this._getAliasStartIndex(columnName);
-    if (lastUnquotedSpaceIndex !== null) {
+    const aliasStartIndex = this._getAliasStartIndex(columnName);
+    if (aliasStartIndex !== null) {
       // Column has an alias
-      columnAlias = columnName.substring(lastUnquotedSpaceIndex);
-      columnName = columnName.substring(0, lastUnquotedSpaceIndex - 1).trimEnd();
+      columnAlias = columnName.substring(aliasStartIndex);
+      columnName = columnName.substring(0, aliasStartIndex - 1).trimEnd();
       if (columnName.toUpperCase().endsWith('AS')) {
         columnName = columnName.substring(0, columnName.length - 2).trimEnd();
       }
