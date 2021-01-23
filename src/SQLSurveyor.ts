@@ -8,17 +8,28 @@ import { BaseSqlQueryListener } from "./parsing/BaseSqlQueryListener";
 import { PLpgSQLQueryListener } from "./parsing/PLpgSQLQueryListener";
 import { antlr4tsSQL, SQLDialect, ParseTreeWalker, PredictionMode, CommonTokenStream, Parser, Token } from 'antlr4ts-sql';
 import { TokenTypeIdentifier } from "./lexing/TokenTypeIdentifier";
+import { SQLSurveyorOptions } from "./SQLSurveyorOptions";
 
 export class SQLSurveyor {
 
   _dialect: SQLDialect;
   _antlr4tssql: antlr4tsSQL;
+  _options: SQLSurveyorOptions;
 
-  constructor(dialect: SQLDialect) {
+  constructor(dialect: SQLDialect, options?: SQLSurveyorOptions) {
     this._dialect = dialect;
     if (this._dialect === null || this._dialect === undefined) {
       this._dialect = SQLDialect.TSQL;
     }
+    this._antlr4tssql = new antlr4tsSQL(this._dialect);
+    this._options = null;
+    if (options !== null && options !== undefined) {
+      this._options = options;
+    }
+  }
+
+  setDialect(dialect: SQLDialect): void {
+    this._dialect = dialect;
     this._antlr4tssql = new antlr4tsSQL(this._dialect);
   }
 
@@ -108,13 +119,13 @@ export class SQLSurveyor {
 
   _getListener(sqlScript: string): BaseSqlQueryListener {
     if (this._dialect === SQLDialect.TSQL) {
-      return new TSqlQueryListener(sqlScript);
+      return new TSqlQueryListener(sqlScript, this._options);
     } else if (this._dialect === SQLDialect.PLSQL) {
-      return new PlSqlQueryListener(sqlScript);
+      return new PlSqlQueryListener(sqlScript, this._options);
     } else if (this._dialect === SQLDialect.PLpgSQL) {
-      return new PLpgSQLQueryListener(sqlScript);
+      return new PLpgSQLQueryListener(sqlScript, this._options);
     } else if (this._dialect === SQLDialect.MYSQL) {
-      return new MySQLQueryListener(sqlScript);
+      return new MySQLQueryListener(sqlScript, this._options);
     }
     return null;
   }

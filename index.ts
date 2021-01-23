@@ -1,6 +1,7 @@
 export { SQLDialect } from 'antlr4ts-sql';
 
 export * from './src/SQLSurveyor';
+export * from './src/SQLSurveyorOptions';
 
 export * from './src/models/ParsedQuery';
 export * from './src/models/ParsedSql';

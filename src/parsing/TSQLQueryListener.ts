@@ -63,91 +63,123 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
   }
 
   enterDml_clause(ctx: any) {
-    let queryLocation: TokenLocation = this._getClauseLocation(ctx);
-    // Remove trailing ; and whitespace if it exists to match other SQL dialects
-    queryLocation = this._getClauseLocationWithoutTrailingSemicolon(queryLocation);
-    this.parsedSql._addQuery(new ParsedQuery(QueryType.DML, queryLocation.getToken(this.input), queryLocation));
+    try {
+      let queryLocation: TokenLocation = this._getClauseLocation(ctx);
+      // Remove trailing ; and whitespace if it exists to match other SQL dialects
+      queryLocation = this._getClauseLocationWithoutTrailingSemicolon(queryLocation);
+      this.parsedSql._addQuery(new ParsedQuery(QueryType.DML, queryLocation.getToken(this.input), queryLocation));
+    } catch (err) {
+      this._handleError(err);
+    }
   }
 
   enterDdl_clause(ctx: any) {
-    let queryLocation: TokenLocation = this._getClauseLocation(ctx);
-    // Remove trailing ; and whitespace if it exists to match other SQL dialects
-    queryLocation = this._getClauseLocationWithoutTrailingSemicolon(queryLocation);
-    this.parsedSql._addQuery(new ParsedQuery(QueryType.DDL, queryLocation.getToken(this.input), queryLocation));
+    try {
+      let queryLocation: TokenLocation = this._getClauseLocation(ctx);
+      // Remove trailing ; and whitespace if it exists to match other SQL dialects
+      queryLocation = this._getClauseLocationWithoutTrailingSemicolon(queryLocation);
+      this.parsedSql._addQuery(new ParsedQuery(QueryType.DDL, queryLocation.getToken(this.input), queryLocation));
+    } catch (err) {
+      this._handleError(err);
+    }
   }
 
   enterSubquery(ctx: any) {
-    const subqueryLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
-    let parsedQuery = this.parsedSql.getQueryAtLocation(subqueryLocation.startIndex);
-    parsedQuery = parsedQuery.getSmallestQueryAtLocation(subqueryLocation.startIndex);
-    parsedQuery._addSubQuery(new ParsedQuery(QueryType.DML, subqueryLocation.getToken(this.input), subqueryLocation));
+    try {
+      const subqueryLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+      let parsedQuery = this.parsedSql.getQueryAtLocation(subqueryLocation.startIndex);
+      parsedQuery = parsedQuery.getSmallestQueryAtLocation(subqueryLocation.startIndex);
+      parsedQuery._addSubQuery(new ParsedQuery(QueryType.DML, subqueryLocation.getToken(this.input), subqueryLocation));
+    } catch (err) {
+      this._handleError(err);
+    }
   }
 
   enterCommon_table_expression(ctx: any) {
-    const cteLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
-    let parsedQuery = this.parsedSql.getQueryAtLocation(cteLocation.startIndex);
-    parsedQuery = parsedQuery.getSmallestQueryAtLocation(cteLocation.startIndex);
-    parsedQuery._addCommonTableExpression(new ParsedQuery(QueryType.DML, cteLocation.getToken(this.input), cteLocation));
+    try {
+      const cteLocation: TokenLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+      let parsedQuery = this.parsedSql.getQueryAtLocation(cteLocation.startIndex);
+      parsedQuery = parsedQuery.getSmallestQueryAtLocation(cteLocation.startIndex);
+      parsedQuery._addCommonTableExpression(new ParsedQuery(QueryType.DML, cteLocation.getToken(this.input), cteLocation));
+    } catch (err) {
+      this._handleError(err);
+    }
   }
 
   exitFull_table_name(ctx: any) {
-    this.exitTable_name(ctx);
+    try {
+      this.exitTable_name(ctx);
+    } catch (err) {
+      this._handleError(err);
+    }
   }
 
   exitTable_name(ctx: any) {
-    const tableLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
-    const referencedTable = this.parseContextToReferencedTable(ctx);
-    let parsedQuery = this.parsedSql.getQueryAtLocation(tableLocation.startIndex);
-    parsedQuery = parsedQuery.getSmallestQueryAtLocation(tableLocation.startIndex);
-    parsedQuery._addTableNameLocation(referencedTable.tableName, tableLocation, referencedTable.schemaName, referencedTable.databaseName);
+    try {
+      const tableLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+      const referencedTable = this.parseContextToReferencedTable(ctx);
+      let parsedQuery = this.parsedSql.getQueryAtLocation(tableLocation.startIndex);
+      parsedQuery = parsedQuery.getSmallestQueryAtLocation(tableLocation.startIndex);
+      parsedQuery._addTableNameLocation(referencedTable.tableName, tableLocation, referencedTable.schemaName, referencedTable.databaseName);
+    } catch (err) {
+      this._handleError(err);
+    }
   }
 
   exitTable_alias(ctx: any) {
-    const aliasLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
-    const referencedTable = this.parseContextToReferencedTable(ctx._parent._parent.children[0].children[0]);
-    let parsedQuery = this.parsedSql.getQueryAtLocation(aliasLocation.startIndex);
-    parsedQuery = parsedQuery.getSmallestQueryAtLocation(aliasLocation.startIndex);
-    parsedQuery._addAliasForTable(this.unquote(aliasLocation.getToken(this.input)), referencedTable.tableName);
+    try {
+      const aliasLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+      const referencedTable = this.parseContextToReferencedTable(ctx._parent._parent.children[0].children[0]);
+      let parsedQuery = this.parsedSql.getQueryAtLocation(aliasLocation.startIndex);
+      parsedQuery = parsedQuery.getSmallestQueryAtLocation(aliasLocation.startIndex);
+      parsedQuery._addAliasForTable(this.unquote(aliasLocation.getToken(this.input)), referencedTable.tableName);
+    } catch (err) {
+      this._handleError(err);
+    }
   }
 
   exitColumn_elem(ctx) {
-    const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
-    if (ctx._parent.children[1] instanceof TSQLGrammar.As_column_aliasContext) {
-      columnLocation.lineEnd = (ctx._parent.children[1]._stop as any)._line;
-      columnLocation.stopIndex = (ctx._parent.children[1]._stop as any).stop;
-    }
-    let parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
-    parsedQuery = parsedQuery.getSmallestQueryAtLocation(columnLocation.startIndex);
-    let columnText = columnLocation.getToken(this.input);
-    let columnName = columnText;
-    let columnAlias = null;
-    let tableNameOrAlias = null;
-    if (columnText.includes('.')) {
-      // Column may have a table alias
-      const functionArgumentLocation = this._getFunctionArgumentLocation(ctx, columnLocation);
-      if (functionArgumentLocation !== null) {
-        columnText = functionArgumentLocation.getToken(this.input);
+    try {
+      const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+      if (ctx._parent.children[1] instanceof TSQLGrammar.As_column_aliasContext) {
+        columnLocation.lineEnd = (ctx._parent.children[1]._stop as any)._line;
+        columnLocation.stopIndex = (ctx._parent.children[1]._stop as any).stop;
       }
-      const tableNameOrAliasStopIndex = this._getTableAliasEndLocation(columnText);
-      if (tableNameOrAliasStopIndex !== null) {
-        tableNameOrAlias = this.unquote(columnText.substring(0, tableNameOrAliasStopIndex));
+      let parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
+      parsedQuery = parsedQuery.getSmallestQueryAtLocation(columnLocation.startIndex);
+      let columnText = columnLocation.getToken(this.input);
+      let columnName = columnText;
+      let columnAlias = null;
+      let tableNameOrAlias = null;
+      if (columnText.includes('.')) {
+        // Column may have a table alias
+        const functionArgumentLocation = this._getFunctionArgumentLocation(ctx, columnLocation);
+        if (functionArgumentLocation !== null) {
+          columnText = functionArgumentLocation.getToken(this.input);
+        }
+        const tableNameOrAliasStopIndex = this._getTableAliasEndLocation(columnText);
+        if (tableNameOrAliasStopIndex !== null) {
+          tableNameOrAlias = this.unquote(columnText.substring(0, tableNameOrAliasStopIndex));
+        }
       }
-    }
-    columnName = columnName.trim();
-    const aliasStartIndex = this._getAliasStartIndex(columnName);
-    if (aliasStartIndex !== null) {
-      // Column has an alias
-      columnAlias = columnName.substring(aliasStartIndex);
-      columnName = columnName.substring(0, aliasStartIndex - 1).trimEnd();
-      if (columnName.toUpperCase().endsWith('AS')) {
-        columnName = columnName.substring(0, columnName.length - 2).trimEnd();
+      columnName = columnName.trim();
+      const aliasStartIndex = this._getAliasStartIndex(columnName);
+      if (aliasStartIndex !== null) {
+        // Column has an alias
+        columnAlias = columnName.substring(aliasStartIndex);
+        columnName = columnName.substring(0, aliasStartIndex - 1).trimEnd();
+        if (columnName.toUpperCase().endsWith('AS')) {
+          columnName = columnName.substring(0, columnName.length - 2).trimEnd();
+        }
       }
+      columnName = this.unquote(columnName);
+      if (columnAlias !== null) {
+        columnAlias = this.unquote(columnAlias);
+      }
+      parsedQuery._addOutputColumn(columnName, columnAlias, tableNameOrAlias);
+    } catch (err) {
+      this._handleError(err);
     }
-    columnName = this.unquote(columnName);
-    if (columnAlias !== null) {
-      columnAlias = this.unquote(columnAlias);
-    }
-    parsedQuery._addOutputColumn(columnName, columnAlias, tableNameOrAlias);
   }
 
   _getFunctionArgumentLocation(ctx: any, columnLocation: TokenLocation): TokenLocation {
@@ -157,42 +189,54 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
   }
 
   exitFull_column_name(ctx) {
-    let parentContext = ctx._parent;
-    while (parentContext !== undefined) {
-      if (parentContext instanceof TSQLGrammar.Select_list_elemContext) {
-        // This is an output column, don't record it as a referenced column
-        return;
-      } else if (parentContext instanceof TSQLGrammar.SubqueryContext) {
-        // This is a subquery in the SELECT list, add the referenced column
-        break;
+    try {
+      let parentContext = ctx._parent;
+      while (parentContext !== undefined) {
+        if (parentContext instanceof TSQLGrammar.Select_list_elemContext) {
+          // This is an output column, don't record it as a referenced column
+          return;
+        } else if (parentContext instanceof TSQLGrammar.SubqueryContext) {
+          // This is a subquery in the SELECT list, add the referenced column
+          break;
+        }
+        parentContext = parentContext._parent;
       }
-      parentContext = parentContext._parent;
+      const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+      let parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
+      parsedQuery = parsedQuery.getSmallestQueryAtLocation(columnLocation.startIndex);
+      const columnText = columnLocation.getToken(this.input);
+      let columnName = columnText;
+      let tableNameOrAlias = null;
+      if (columnText.includes('.')) {
+        const columnTextSplit: string[] = columnText.split('.');
+        columnName = this.unquote(columnTextSplit[columnTextSplit.length - 1]);
+        tableNameOrAlias = this.unquote(columnTextSplit[columnTextSplit.length - 2]);
+      } else {
+        columnName = this.unquote(columnName);
+      }
+      parsedQuery._addReferencedColumn(columnName, tableNameOrAlias, columnLocation);
+    } catch (err) {
+      this._handleError(err);
     }
-    const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
-    let parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
-    parsedQuery = parsedQuery.getSmallestQueryAtLocation(columnLocation.startIndex);
-    const columnText = columnLocation.getToken(this.input);
-    let columnName = columnText;
-    let tableNameOrAlias = null;
-    if (columnText.includes('.')) {
-      const columnTextSplit: string[] = columnText.split('.');
-      columnName = this.unquote(columnTextSplit[columnTextSplit.length - 1]);
-      tableNameOrAlias = this.unquote(columnTextSplit[columnTextSplit.length - 2]);
-    } else {
-      columnName = this.unquote(columnName);
-    }
-    parsedQuery._addReferencedColumn(columnName, tableNameOrAlias, columnLocation);
   }
 
   exitAsterisk(ctx) {
-    this.exitColumn_elem(ctx);
+    try {
+      this.exitColumn_elem(ctx);
+    } catch (err) {
+      this._handleError(err);
+    }
   }
 
   exitExpression_elem(ctx) {
-    if (ctx.children[0] instanceof TSQLGrammar.ExpressionContext) {
-      return this.exitColumn_elem(ctx.children[0]);
-    } else if (ctx.children.length > 1) {
-      return this.exitColumn_elem(ctx.children[ctx.children.length - 1]);
+    try {
+      if (ctx.children[0] instanceof TSQLGrammar.ExpressionContext) {
+        return this.exitColumn_elem(ctx.children[0]);
+      } else if (ctx.children.length > 1) {
+        return this.exitColumn_elem(ctx.children[ctx.children.length - 1]);
+      }
+    } catch (err) {
+      this._handleError(err);
     }
   }
 

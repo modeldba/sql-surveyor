@@ -1,16 +1,19 @@
 import { TokenLocation } from '../models/TokenLocation';
 import { ParsedSql } from '../models/ParsedSql';
+import { SQLSurveyorOptions } from '@/SQLSurveyorOptions';
 
 export class BaseSqlQueryListener {
   
   input: string;
+  options: SQLSurveyorOptions;
   tableNameLocations: { [tableName: string]: TokenLocation[] };
   tableAlias: { [tableName: string]: string[] };
-
+  
   parsedSql: ParsedSql;
-
-  constructor(input: string) {
+  
+  constructor(input: string, options: SQLSurveyorOptions) {
     this.input = input;
+    this.options = options;
     this.tableNameLocations = {};
     this.tableAlias = {};
 
@@ -109,6 +112,20 @@ export class BaseSqlQueryListener {
       ctx = currentChild;
     }
     return null;
+  }
+
+  _handleError(error: Error) {
+    if (this.options && this.options.logErrors) {
+      if (error.stack) {
+        console.error(error.stack);
+      } else {
+        console.error(error.name + ': ' + error.message);
+      }
+    }
+    if (this.options && !this.options.throwErrors) {
+      return;
+    }
+    throw error;
   }
   
 }
