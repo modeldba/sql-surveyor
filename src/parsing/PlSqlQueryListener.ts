@@ -96,6 +96,11 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
     }
   }
 
+  exitVariable_name(ctx: any) {
+    // Handle any variables as columns
+    this.exitColumn_name(ctx);
+  }
+
   exitTableview_name(ctx: any) {
     try {
       if (!(ctx._parent instanceof PlSQLGrammar.Select_list_elementsContext)) { // We already detect this context separately
@@ -112,6 +117,17 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
 
   exitColumn_name(ctx: any) {
     try {
+      let parentContext = ctx._parent;
+      while (parentContext !== undefined) {
+        if (parentContext instanceof PlSQLGrammar.Select_list_elementsContext) {
+          // This is an output column, don't record it as a referenced column
+          return;
+        } else if (parentContext instanceof PlSQLGrammar.SubqueryContext) {
+          // This is a subquery in the SELECT list, add the referenced column
+          break;
+        }
+        parentContext = parentContext._parent;
+      }
       const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
       let parsedQuery = this.parsedSql.getQueryAtLocation(columnLocation.startIndex);
       parsedQuery = parsedQuery.getSmallestQueryAtLocation(columnLocation.startIndex);

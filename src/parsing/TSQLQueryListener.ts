@@ -116,6 +116,17 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
 
   exitTable_name(ctx: any) {
     try {
+      let parentContext = ctx._parent;
+      while (parentContext !== undefined) {
+        if (parentContext instanceof TSQLGrammar.Select_list_elemContext) {
+          // This is part of an output column, don't record it as a referenced table
+          return;
+        } else if (parentContext instanceof TSQLGrammar.SubqueryContext) {
+          // This is a subquery in the SELECT list, add the referenced table
+          break;
+        }
+        parentContext = parentContext._parent;
+      }
       const tableLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
       const referencedTable = this.parseContextToReferencedTable(ctx);
       let parsedQuery = this.parsedSql.getQueryAtLocation(tableLocation.startIndex);
@@ -140,7 +151,7 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
 
   exitColumn_elem(ctx) {
     try {
-      const columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+      let columnLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
       if (ctx._parent.children[1] instanceof TSQLGrammar.As_column_aliasContext) {
         columnLocation.lineEnd = (ctx._parent.children[1]._stop as any)._line;
         columnLocation.stopIndex = (ctx._parent.children[1]._stop as any).stop;
@@ -156,10 +167,13 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
         const functionArgumentLocation = this._getFunctionArgumentLocation(ctx, columnLocation);
         if (functionArgumentLocation !== null) {
           columnText = functionArgumentLocation.getToken(this.input);
+          columnLocation = functionArgumentLocation;
         }
         const tableNameOrAliasStopIndex = this._getTableAliasEndLocation(columnText);
         if (tableNameOrAliasStopIndex !== null) {
           tableNameOrAlias = this.unquote(columnText.substring(0, tableNameOrAliasStopIndex));
+          const tableNameOrAliasLocation = new TokenLocation(columnLocation.lineStart, columnLocation.lineEnd, columnLocation.startIndex, columnLocation.startIndex + tableNameOrAliasStopIndex - 1);
+          parsedQuery._addTableNameLocation(tableNameOrAlias, tableNameOrAliasLocation, null, null);
         }
       }
       columnName = columnName.trim();
@@ -192,7 +206,11 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
     try {
       let parentContext = ctx._parent;
       while (parentContext !== undefined) {
-        if (parentContext instanceof TSQLGrammar.Select_list_elemContext) {
+        if (parentContext instanceof TSQLGrammar.Column_elemContext) {
+          // Column_elem will already handle this token
+          // (not all Full_column_name are children of Column_elem)
+          return;
+        } else if (parentContext instanceof TSQLGrammar.Select_list_elemContext) {
           // This is an output column, don't record it as a referenced column
           return;
         } else if (parentContext instanceof TSQLGrammar.SubqueryContext) {
@@ -211,6 +229,10 @@ export class TSqlQueryListener extends BaseSqlQueryListener implements TSqlParse
         const columnTextSplit: string[] = columnText.split('.');
         columnName = this.unquote(columnTextSplit[columnTextSplit.length - 1]);
         tableNameOrAlias = this.unquote(columnTextSplit[columnTextSplit.length - 2]);
+        let tableNameOrAliasStartIndex = columnLocation.stopIndex - columnTextSplit[columnTextSplit.length - 1].length - columnTextSplit[columnTextSplit.length - 2].length;
+        let tableNameOrAliasStopIndex = tableNameOrAliasStartIndex + columnTextSplit[columnTextSplit.length - 2].length - 1;
+        const tableNameOrAliasLocation = new TokenLocation(columnLocation.lineStart, columnLocation.lineEnd, tableNameOrAliasStartIndex, tableNameOrAliasStopIndex);
+        parsedQuery._addTableNameLocation(tableNameOrAlias, tableNameOrAliasLocation, null, null);
       } else {
         columnName = this.unquote(columnName);
       }
