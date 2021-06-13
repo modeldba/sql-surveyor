@@ -43,7 +43,20 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
   enterData_manipulation_language_statements(ctx: any) {
     try {
       const queryLocation: TokenLocation = this._getClauseLocation(ctx);
-      this.parsedSql._addQuery(new ParsedQuery(QueryType.DML, queryLocation.getToken(this.input), queryLocation));
+      const dmlStatements = new ParsedQuery(QueryType.DML, queryLocation.getToken(this.input), queryLocation);
+      if (ctx.parent && ctx.parent instanceof PlSQLGrammar.Sql_statementContext
+          && ctx.parent.parent && ctx.parent.parent instanceof PlSQLGrammar.StatementContext) {
+        // Inside an anonymous block
+        let parsedQuery = this.parsedSql.getQueryAtLocation(queryLocation.startIndex);
+        if (parsedQuery !== null) {
+          parsedQuery = parsedQuery.getSmallestQueryAtLocation(queryLocation.startIndex);
+          parsedQuery._addSubQuery(dmlStatements)
+        } else {
+          this.parsedSql._addQuery(dmlStatements);
+        }
+      } else {
+        this.parsedSql._addQuery(dmlStatements);
+      }
     } catch (err) {
       this._handleError(err);
     }
@@ -52,7 +65,11 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
   enterUnit_statement(ctx: any) {
     try {
       const queryLocation: TokenLocation = this._getClauseLocation(ctx);
-      this.parsedSql._addQuery(new ParsedQuery(QueryType.DDL, queryLocation.getToken(this.input), queryLocation));
+      let queryType = QueryType.DDL;
+      if (ctx instanceof PlSQLGrammar.Anonymous_blockContext) {
+        queryType = QueryType.STATEMENT_BLOCK;
+      }
+      this.parsedSql._addQuery(new ParsedQuery(queryType, queryLocation.getToken(this.input), queryLocation));
     } catch (err) {
       this._handleError(err);
     }
@@ -88,7 +105,14 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
   enterProcedure_call(ctx: any) {
     try {
       const queryLocation: TokenLocation = this._getClauseLocation(ctx);
-      this.parsedSql._addQuery(new ParsedQuery(QueryType.STORED_PROCEDURE, queryLocation.getToken(this.input), queryLocation));
+      let parsedQuery = this.parsedSql.getQueryAtLocation(queryLocation.startIndex);
+      const procedureCall = new ParsedQuery(QueryType.STORED_PROCEDURE, queryLocation.getToken(this.input), queryLocation);
+      if (parsedQuery !== null) {
+        parsedQuery = parsedQuery.getSmallestQueryAtLocation(queryLocation.startIndex);
+        parsedQuery._addSubQuery(procedureCall)
+      } else {
+        this.parsedSql._addQuery(procedureCall);
+      }
     } catch (err) {
       this._handleError(err);
     }
@@ -97,7 +121,37 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
   enterFunction_call(ctx: any) {
     try {
       const queryLocation: TokenLocation = this._getClauseLocation(ctx);
-      this.parsedSql._addQuery(new ParsedQuery(QueryType.FUNCTION, queryLocation.getToken(this.input), queryLocation));
+      let parsedQuery = this.parsedSql.getQueryAtLocation(queryLocation.startIndex);
+      const functionCall = new ParsedQuery(QueryType.FUNCTION, queryLocation.getToken(this.input), queryLocation);
+      if (parsedQuery !== null) {
+        parsedQuery = parsedQuery.getSmallestQueryAtLocation(queryLocation.startIndex);
+        parsedQuery._addSubQuery(functionCall)
+      } else {
+        this.parsedSql._addQuery(functionCall);
+      }
+    } catch (err) {
+      this._handleError(err);
+    }
+  }
+
+  enterStatement(ctx: any) {
+    try {
+      if (ctx instanceof PlSQLGrammar.Procedure_callContext 
+          || ctx instanceof PlSQLGrammar.Function_callContext
+          || (ctx instanceof PlSQLGrammar.Sql_statementContext 
+              && ctx.childCount > 0 && ctx.children[0] instanceof PlSQLGrammar.Data_manipulation_language_statementsContext)) {
+        // All these queries are handled directly, skip processing
+        return;
+      }
+      const queryLocation: TokenLocation = this._getClauseLocation(ctx);
+      let parsedQuery = this.parsedSql.getQueryAtLocation(queryLocation.startIndex);
+      const controlFlowStatement = new ParsedQuery(QueryType.CONTROL_FLOW, queryLocation.getToken(this.input), queryLocation);
+      if (parsedQuery !== null) {
+        parsedQuery = parsedQuery.getSmallestQueryAtLocation(queryLocation.startIndex);
+        parsedQuery._addSubQuery(controlFlowStatement)
+      } else {
+        this.parsedSql._addQuery(controlFlowStatement);
+      }
     } catch (err) {
       this._handleError(err);
     }
