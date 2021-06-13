@@ -22,6 +22,9 @@ export class ParsedQuery {
 
   commonTableExpressionName: string;
 
+  routineName: string;
+  parameters: Token[];
+
   subqueries: { [subqueryStartIndex: number]: ParsedQuery };
   commonTableExpressions: { [cteStartIndex: number]: ParsedQuery };
 
@@ -39,6 +42,8 @@ export class ParsedQuery {
     this.queryErrors = [];
     this.subqueries = {};
     this.commonTableExpressions = {};
+
+    this.parameters = [];
   }
 
   getAllReferencedTables(): { [tableName: string]: ReferencedTable } {

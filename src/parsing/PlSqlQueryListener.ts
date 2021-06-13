@@ -4,6 +4,7 @@ import { QueryType } from '../models/QueryType';
 import { PlSqlParserListener, PlSQLGrammar } from 'antlr4ts-sql';
 import { BaseSqlQueryListener } from './BaseSqlQueryListener';
 import { ReferencedTable } from '../models/ReferencedTable';
+import { Token } from '../models/Token';
 
 export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlParserListener {
 
@@ -79,6 +80,24 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
       let parsedQuery = this.parsedSql.getQueryAtLocation(cteLocation.startIndex);
       parsedQuery = parsedQuery.getSmallestQueryAtLocation(cteLocation.startIndex);
       parsedQuery._addCommonTableExpression(new ParsedQuery(QueryType.DML, cteLocation.getToken(this.input), cteLocation));
+    } catch (err) {
+      this._handleError(err);
+    }
+  }
+
+  enterProcedure_call(ctx: any) {
+    try {
+      const queryLocation: TokenLocation = this._getClauseLocation(ctx);
+      this.parsedSql._addQuery(new ParsedQuery(QueryType.STORED_PROCEDURE, queryLocation.getToken(this.input), queryLocation));
+    } catch (err) {
+      this._handleError(err);
+    }
+  }
+
+  enterFunction_call(ctx: any) {
+    try {
+      const queryLocation: TokenLocation = this._getClauseLocation(ctx);
+      this.parsedSql._addQuery(new ParsedQuery(QueryType.FUNCTION, queryLocation.getToken(this.input), queryLocation));
     } catch (err) {
       this._handleError(err);
     }
@@ -229,6 +248,25 @@ export class PlSqlQueryListener extends BaseSqlQueryListener implements PlSqlPar
     } catch (err) {
       this._handleError(err);
     }
+  }
+
+  exitRoutine_name(ctx: any) {
+    try {
+      const routineLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+      let parsedQuery = this.parsedSql.getQueryAtLocation(routineLocation.startIndex);
+      parsedQuery = parsedQuery.getSmallestQueryAtLocation(routineLocation.startIndex);
+      const routineName = routineLocation.getToken(this.input);
+      parsedQuery.routineName = routineName;
+    } catch(err) {
+      this._handleError(err);
+    }
+  }
+
+  exitArgument(ctx: any) {
+    const argumentLocation = new TokenLocation(ctx._start._line, ctx._stop._line, ctx._start.start, ctx._stop.stop);
+    let parsedQuery = this.parsedSql.getQueryAtLocation(argumentLocation.startIndex);
+    parsedQuery = parsedQuery.getSmallestQueryAtLocation(argumentLocation.startIndex);
+    parsedQuery.parameters.push(new Token(argumentLocation.getToken(this.input), null, argumentLocation));
   }
 
 }

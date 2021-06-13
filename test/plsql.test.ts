@@ -1,4 +1,5 @@
 import { SQLSurveyor, SQLDialect, ParsedSql, TokenLocation } from '../dist/index';
+import { QueryType } from '../dist/src/models/QueryType';
 
 let surveyor: SQLSurveyor = null;
 beforeAll(() => {
@@ -246,4 +247,34 @@ test('that output column names and aliases are correctly parsed for a CASE state
   expect(column.columnAlias).toBe('csstmt');
   expect(column.tableName).toBeNull();
   expect(column.tableAlias).toBeNull();
+});
+
+test('that procedure and function calls are parsed correctly', () => {
+  let sql = 'proc_package.proc_name(columnA, \'aString\', 123);'
+
+  let parsedSql: ParsedSql = surveyor.survey(sql);
+  expect(Object.keys(parsedSql.parsedQueries).length).toBe(1);
+  let parsedQuery = parsedSql.getQueryAtLocation(0);
+
+  expect(parsedQuery.queryType).toBe(QueryType.STORED_PROCEDURE);
+  expect(parsedQuery.routineName).toBe('proc_package.proc_name');
+  expect(parsedQuery.parameters.length).toBe(3);
+  expect(parsedQuery.parameters[0].value).toBe('columnA');
+  expect(parsedQuery.parameters[1].value).toBe("'aString'");
+  expect(parsedQuery.parameters[2].value).toBe('123');
+
+  // TODO: Awaiting fix to bug in ANLTR4 PL/SQL Grammar
+  // sql = 'CALL func_name(columnA, \'aString\', 123);'
+
+  // parsedSql = surveyor.survey(sql);
+  // expect(Object.keys(parsedSql.parsedQueries).length).toBe(1);
+  // parsedQuery = parsedSql.getQueryAtLocation(0);
+
+  // expect(parsedQuery.queryType).toBe(QueryType.FUNCTION);
+  // expect(parsedQuery.procedureName).toBe('func_name');
+  // expect(parsedQuery.functionName).toBeUndefined();
+  // expect(parsedQuery.parameters.length).toBe(3);
+  // expect(parsedQuery.parameters[0].value).toBe('columnA');
+  // expect(parsedQuery.parameters[1].value).toBe("'aString'");
+  // expect(parsedQuery.parameters[2].value).toBe('123');
 });
