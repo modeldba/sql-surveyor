@@ -1,6 +1,6 @@
 import { TokenLocation } from '../models/TokenLocation';
 import { ParsedSql } from '../models/ParsedSql';
-import { SQLSurveyorOptions } from '@/SQLSurveyorOptions';
+import { SQLSurveyorOptions } from '../SQLSurveyorOptions';
 
 export class BaseSqlQueryListener {
   

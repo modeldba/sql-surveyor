@@ -10,9 +10,12 @@
     "test": "npx jest",
     "cleantest": "npm run build && npm test"
   },
+  "publishConfig": {
+    "registry": "http://npm.eng.tcs.local/repository/npm-telsis/"
+  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/modeldba/sql-surveyor.git"
+    "url": "git+https://github.com/:mannnick24/sql-surveyor.git"
   },
   "keywords": [
     "sql",
