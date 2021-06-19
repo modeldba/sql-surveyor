@@ -51,7 +51,7 @@ export class SQLSurveyor {
       ParseTreeWalker.DEFAULT.walk(listener, parsedTree);
     } catch (e) {
       // We'll attempt to complete surveying
-      console.error(e);
+      // console.error(e);
     }
     for (const parsedQuery of Object.values(listener.parsedSql.parsedQueries)) {
       parsedQuery._consolidateTables();

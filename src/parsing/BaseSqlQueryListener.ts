@@ -117,9 +117,9 @@ export class BaseSqlQueryListener {
   _handleError(error: Error) {
     if (this.options && this.options.logErrors) {
       if (error.stack) {
-        console.error(error.stack);
+        // console.error(error.stack);
       } else {
-        console.error(error.name + ': ' + error.message);
+        // console.error(error.name + ': ' + error.message);
       }
     }
     if (this.options && !this.options.throwErrors) {

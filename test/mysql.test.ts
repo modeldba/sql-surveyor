@@ -191,6 +191,21 @@ test('that output column names and aliases are correctly parsed when subquery ha
   expect(column2.tableAlias).toBeNull();
 });
 
+test('test subselect functions', () => {
+  let sql = `SELECT r.Id, s.Username,
+  (SELECT GROUP_CONCAT(p.ProfileId SEPARATOR ';') FROM ProfilesReports p JOIN Profiles AS profile
+  ON p.ProfileId = profile.Id WHERE p.ReportId = r.Id) AS AssignedProfiles, r.OrganisationId, o.CRMId FROM Reports r
+   JOIN Organisations o ON o.Id = r.organisationId
+   LEFT JOIN SFTPDestinations s on s.id = r.SFTPDestination WHERE AutoGen=1 AND (RetryGen <= 1624113367022 OR RetryGen IS NULL) 
+   AND ( MOD(r.Id, 10) = 1 OR MOD(r.Id, 10) = 3 OR MOD(r.Id, 10) = 5 OR MOD(r.Id, 10) = 7 OR MOD(r.Id, 10) = 9) 
+   AND (TIMESTAMPDIFF(SECOND, FROM_UNIXTIME(r.NextGen/1000), NOW()) > 43200 OR NextGen IS NULL);`;
+
+  let parsedSql: ParsedSql = surveyor.survey(sql);
+  expect(Object.keys(parsedSql.parsedQueries).length).toBe(1);
+  let parsedQuery = parsedSql.getQueryAtLocation(0);
+  expect(Object.keys(parsedQuery.outputColumns).length).toBe(2);
+});
+
 test('that output column names and aliases are correctly parsed for a CASE statement', () => {
   let sql = 'SELECT CASE WHEN a > 1 THEN 100 WHEN a < 1 THEN -100 ELSE 0 END FROM table1;';
   

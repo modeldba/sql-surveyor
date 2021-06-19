@@ -1,7 +1,7 @@
 {
-  "name": "sql-surveyor",
-  "version": "1.4.0",
-  "description": "High-level SQL parser. Identify tables, columns, aliases and more from your SQL script in one easy to consume object. Supports PostgreSQL, MySQL, SQL Server and Oracle (PL/SQL) dialects.",
+  "name": "@telsis/sql-surveyor",
+  "version": "1.4.0-telsis1",
+  "description": "Forked version of High-level SQL parser. Identify tables, columns, aliases and more from your SQL script in one easy to consume object. Supports PostgreSQL, MySQL, SQL Server and Oracle (PL/SQL) dialects.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -29,7 +29,7 @@
     "plsql",
     "tsql"
   ],
-  "author": "modelDBA",
+  "author": "modelDBA modified by Nick Mann",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/modeldba/sql-surveyor/issues"
