@@ -50,8 +50,10 @@ export class SQLSurveyor {
       // @ts-ignore Weak Type Detection
       ParseTreeWalker.DEFAULT.walk(listener, parsedTree);
     } catch (e) {
-      // We'll attempt to complete surveying
-      console.error(e);
+      // We'll attempt to complete surveying, don't throw
+      if (this._options && this._options.logErrors) {
+        console.error(e);
+      }
     }
     for (const parsedQuery of Object.values(listener.parsedSql.parsedQueries)) {
       parsedQuery._consolidateTables();
